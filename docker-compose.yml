@@ -1,0 +1,10 @@
+services:
+    spinner:
+        image: aljazmc/image-spinner
+        working_dir: /home/aljazmc
+        volumes:
+            - .:/home/aljazmc
+        environment:
+            HOME: /home/aljazmc
+        network_mode: host
+
