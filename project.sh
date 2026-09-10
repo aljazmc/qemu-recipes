@@ -16,8 +16,7 @@ find aports/scripts -mindepth 1 -maxdepth 1 \
     " \
     | xargs -I {} rm -rf {}
 
-rmdir .abuild
-rm -rf alpine.qcow2 iso
+rm -rf .abuild alpine.qcow2 iso
 
 }
 
