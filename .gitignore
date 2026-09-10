@@ -22,7 +22,6 @@ aports/scripts/mkimg.standard.sh
 aports/scripts/README.md
 aports/scripts/genapkovl-xen.sh
 aports/scripts/bootstrap.sh
-aports/scripts/mkimg.test.sh
 aports/scripts/mkimage-yaml.sh
 aports/scripts/mkimg.xen.sh
 aports/scripts/genrootfs.sh
@@ -31,3 +30,5 @@ aports/scripts/mkimg.minirootfs.sh
 aports/scripts/mkimg.base.sh
 aports/README.md
 aports/testing
+
+iso/
