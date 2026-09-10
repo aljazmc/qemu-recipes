@@ -18,6 +18,7 @@ find aports/scripts -mindepth 1 -maxdepth 1 \
 
 rmdir .abuild
 rm -rf alpine.qcow2 iso
+
 }
 
 $1
