@@ -12,12 +12,13 @@ find . -mindepth 2 -maxdepth 2 \
 find aports/scripts -mindepth 1 -maxdepth 1 \
     | sed "
         /aports\/scripts\/genapkovl-test.sh/d;
+        /aports\/scripts\/genapkovl-x11.sh/d;
         /aports\/scripts\/mkimg.test.sh/d;
+        /aports\/scripts\/mkimg.x11.sh/d;
     " \
     | xargs -I {} rm -rf {}
 
-rmdir .abuild
-rm -rf alpine.qcow2 iso
+rm -rf .abuild alpine.qcow2 .ash_history iso
 
 }
 
