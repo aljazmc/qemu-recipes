@@ -1,0 +1,36 @@
+profile_x11() {
+    profile_virt
+    kernel_flavors="virt"
+    title="x11"
+    desc="x11 Desktop"
+    profile_abbrev="x11"
+    apks="$apks
+        gcompat
+        glu-dev
+        kbd
+        kbd-bkeymaps
+        libjpeg-turbo-dev
+        libpng-dev
+        libstdc++
+        libuv-dev
+        libvorbis-dev
+        mbedtls-dev
+        mesa-dev
+        openal-soft-dev
+        openbox
+        openssh
+        pipewire
+        pipewire-alsa
+        pipewire-pulse
+        sdl3-dev
+        sqlite-dev
+        vulkan-loader-dev
+        wireplumber
+        xauth
+        xf86-video-fbdev
+        xf86-video-vesa
+        xinit
+        xorg-server
+        xterm
+    "
+}
