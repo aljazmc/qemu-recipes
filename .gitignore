@@ -31,4 +31,6 @@ aports/scripts/mkimg.base.sh
 aports/README.md
 aports/testing
 
+.ash_history
+
 iso/
