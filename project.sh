@@ -22,4 +22,18 @@ rm -rf .abuild alpine.qcow2 .ash_history iso
 
 }
 
+start() {
+
+## clone aports if it doesn't already exist
+
+if [ ! -d aports/main ]; then
+
+    docker compose run --rm spinner
+
+fi
+
+docker compose run --rm spinner "sh aports/scripts/mkimage.sh --tag edge --outdir iso --arch x86_64 --repository https://dl-cdn.alpinelinux.org/alpine/edge/main --repository https://dl-cdn.alpinelinux.org/alpine/edge/community --profile x11"
+
+}
+
 $1
