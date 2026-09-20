@@ -27,11 +27,13 @@ iface eth0 inet dhcp
 EOF
 
 # --- Enable services ---------------------------------------------------------
-for svc in devfs dmesg mdev hwdrivers modules sysctl hostname bootmisc syslog sshd; do
+for svc in dbus devfs dmesg mdev hwdrivers modules sysctl hostname bootmisc syslog sshd; do
  	rc_add "$svc" boot
 done
-for svc in networking local sshd; do
+for svc in dbus networking local sshd; do
  	rc_add "$svc" default
 done
+
+echo "exec openbox" > ~/.xinitrc
 
 tar -c -C "$tmp" etc | gzip -9n > "$HOSTNAME.apkovl.tar.gz"
