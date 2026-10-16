@@ -9,10 +9,10 @@ you can edit files on the host and see the result in the VM right away.
 
 | Profile     | What boots                                    | Shared host dir is | Open on the host                          |
 |-------------|-----------------------------------------------|--------------------|-------------------------------------------|
-| `wordpress` | Apache, PHP 8.4, MariaDB, installed WordPress | `/var/www/html`    | <http://localhost:8080>                   |
 | `lamp`      | Apache, PHP 8.4, MariaDB                      | `/var/www/html`    | <http://localhost:8080>                   |
-| `test`      | lighttpd, PHP 8.5 (FPM), MariaDB, Composer    | `/var/www/html`    | <http://localhost:8080>                   |
 | `node`      | Node.js 24, PostgreSQL 18                     | `/var/www/html`    | <http://localhost:8080>                   |
+| `test`      | lighttpd, PHP 8.5 (FPM), MariaDB, Composer    | `/var/www/html`    | <http://localhost:8080>                   |
+| `wordpress` | Apache, PHP 8.4, MariaDB, installed WordPress | `/var/www/html`    | <http://localhost:8080>                   |
 | `x11`       | X11 desktop (openbox) over VNC / noVNC        | `/home/alpine`     | <http://localhost:6080/vnc.html?autoconnect=1&resize=remote> or `vncviewer localhost:5900` |
 
 Each profile is a pair of scripts in `aports/scripts/`: `mkimg.<profile>.sh`
@@ -212,6 +212,14 @@ They end up in `/etc/conf.d/<profile>` in the guest.
 
 | Profile     | Variable              | Default                  |
 |-------------|-----------------------|--------------------------|
+| `lamp`      | `DB_NAME`, `DB_USER`, `DB_PASSWORD` | `app`      |
+| `node`      | `DB_NAME`, `DB_USER`, `DB_PASSWORD` | `app`      |
+|             | `APP_PORT`            | `3000`                   |
+|             | `POSTGRES_JS_VERSION` | `latest`                 |
+| `test`      | `DB_NAME`, `DB_USER`, `DB_PASSWORD` | `app`      |
+|             | `APP_URL`             | `http://localhost:8080`  |
+|             | `LARAVEL_CREATE`      | `yes`                    |
+|             | `LARAVEL_VERSION`     | (latest)                 |
 | `wordpress` | `WP_URL`              | `http://localhost:8080`  |
 |             | `WP_TITLE`            | `WordPress Dev`          |
 |             | `WP_ADMIN_USER`       | `admin`                  |
@@ -219,14 +227,6 @@ They end up in `/etc/conf.d/<profile>` in the guest.
 |             | `WP_ADMIN_EMAIL`      | `admin@example.com`      |
 |             | `WP_VERSION`          | `latest`                 |
 |             | `WP_TARBALL`          | (download)               |
-| `lamp`      | `DB_NAME`, `DB_USER`, `DB_PASSWORD` | `app`      |
-| `test`      | `DB_NAME`, `DB_USER`, `DB_PASSWORD` | `app`      |
-|             | `APP_URL`             | `http://localhost:8080`  |
-|             | `LARAVEL_CREATE`      | `yes`                    |
-|             | `LARAVEL_VERSION`     | (latest)                 |
-| `node`      | `DB_NAME`, `DB_USER`, `DB_PASSWORD` | `app`      |
-|             | `APP_PORT`            | `3000`                   |
-|             | `POSTGRES_JS_VERSION` | `latest`                 |
 | `x11`       | `X11_USER`            | `alpine`                 |
 |             | `VNC_GEOMETRY`        | `1920x1080`              |
 |             | `VNC_PASSWORD`        | (none)                   |
