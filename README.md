@@ -32,8 +32,9 @@ boot overlay (config, services) that sets everything up.
 ./project.sh start
 ```
 
-This clones `aports` on first run and builds the `x11` profile into `iso/`.
-To build another profile, run the same command with a different `--profile`:
+This clones `aports` on first run and builds the profile named in the
+`start()` function of `project.sh` (currently `test`) into `iso/`. To build
+another profile, run the same command with a different `--profile`:
 
 ```sh
 docker compose run --rm spinner "sh aports/scripts/mkimage.sh --tag edge --outdir iso --arch x86_64 \
@@ -46,9 +47,18 @@ The result is `iso/alpine-<profile>-edge-x86_64.iso`.
 
 ### Run
 
+Run the commands from the repository root, since the ISO path is relative.
 All examples forward guest ports to `127.0.0.1` on the host only, and SSH to
 port 2222. Keep the shared directories **outside** this repository (see
 [Clean](#clean)).
+
+- The database disk is optional: if you skip the `qemu-img create` line,
+  also drop the matching `-drive` line.
+- `-enable-kvm` needs read/write access to `/dev/kvm` (usually membership in
+  the `kvm` group). Without it, drop the flag; the VM then runs much slower.
+- If the VM window shows `Nothing to boot`, the firmware found nothing
+  bootable and fell back to network boot. That usually means the ISO wasn't
+  attached as a CD: check that the `-cdrom` path points to the built ISO.
 
 #### wordpress
 
@@ -100,7 +110,8 @@ qemu-system-x86_64 -enable-kvm -m 1024 -smp 2 -cdrom iso/alpine-test-edge-x86_64
 ```
 
 - An empty shared directory gets a new Laravel project on first boot
-  (`composer create-project`, needs internet; about 15 seconds plus copying).
+  (`composer create-project`, needs internet; the site is up after about two
+  minutes).
   Its `.env` is set up for MariaDB and the migrations have run. Offline, or
   with `LARAVEL_CREATE=no`, it gets a starter `index.php` instead. To create
   the project again, empty the directory and reboot.
@@ -183,9 +194,18 @@ qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-x11-edge-x86_64.
 
 ### Build-time settings
 
-Set these as environment variables for the build (for example, add
-`-e VNC_PASSWORD=secret` to `docker compose run`). They end up in
-`/etc/conf.d/<profile>` in the guest.
+Pass these as environment variables to the build container with `-e`,
+placed before the service name:
+
+```sh
+docker compose run --rm -e LARAVEL_CREATE=no -e DB_PASSWORD=secret spinner \
+  "sh aports/scripts/mkimage.sh --tag edge --outdir iso --arch x86_64 \
+  --repository https://dl-cdn.alpinelinux.org/alpine/edge/main \
+  --repository https://dl-cdn.alpinelinux.org/alpine/edge/community \
+  --profile test"
+```
+
+They end up in `/etc/conf.d/<profile>` in the guest.
 
 | Profile     | Variable              | Default                  |
 |-------------|-----------------------|--------------------------|
