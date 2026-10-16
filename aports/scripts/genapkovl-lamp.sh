@@ -79,11 +79,14 @@ mkdir -p "$tmp"/etc/apk
 makefile root:root 0644 "$tmp"/etc/apk/world <<EOF
 alpine-base
 apache2
+apache2-openrc
 blkid
 e2fsprogs
 mariadb
 mariadb-client
+mariadb-openrc
 openssh
+openssh-server-common-openrc
 $PHP
 $PHP-apache2
 $PHP-ctype
