@@ -365,12 +365,17 @@ populate_webroot() {
 			src="$tmp"/wordpress.tar.gz
 			wget -q -O "$src" https://wordpress.org/latest.tar.gz
 		fi
-		# never overwrite files that already exist in the share
-		tar -xzf "$src" -C "$tmp" \
-			&& cp -Rn "$tmp"/wordpress/. "$WEBROOT"/
-		eend $?
+		# Extract straight into the share, keeping files that already exist
+		# there (-k). tar exits non-zero when it skips one, so judge by the
+		# result. (busybox "cp -Rn dir/. dest/" silently copies nothing.)
+		tar -xzkf "$src" -C "$WEBROOT" --strip-components=1 2>/dev/null
+		[ -f "$WEBROOT"/wp-load.php ]
+		eend $? "could not install WordPress core files"
 		rm -rf "$tmp"
 	fi
+
+	# without core files the installer can't run, so don't fake a site
+	[ -f "$WEBROOT"/wp-load.php ] || return 1
 
 	[ -f "$WEBROOT"/wp-config.php ] || write_wp_config
 	[ -f "$WEBROOT"/.htaccess ] || write_htaccess
