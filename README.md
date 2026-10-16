@@ -11,6 +11,7 @@ you can edit files on the host and see the result in the VM right away.
 |-------------|-----------------------------------------------|--------------------|-------------------------------------------|
 | `wordpress` | Apache, PHP 8.4, MariaDB, installed WordPress | `/var/www/html`    | <http://localhost:8080>                   |
 | `lamp`      | Apache, PHP 8.4, MariaDB                      | `/var/www/html`    | <http://localhost:8080>                   |
+| `test`      | lighttpd, PHP 8.5 (FPM), MariaDB, Composer    | `/var/www/html`    | <http://localhost:8080>                   |
 | `node`      | Node.js 24, PostgreSQL 18                     | `/var/www/html`    | <http://localhost:8080>                   |
 | `x11`       | X11 desktop (openbox) over VNC / noVNC        | `/home/alpine`     | <http://localhost:6080/vnc.html?autoconnect=1&resize=remote> or `vncviewer localhost:5900` |
 
@@ -83,6 +84,43 @@ qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-lamp-edge-x86_64
 - Database `app`, user `app`, password `app`:
   `new mysqli('localhost', 'app', 'app', 'app')`.
 
+#### test
+
+A lighter LAMP-like stack that runs a full Laravel project: lighttpd instead
+of Apache, PHP 8.5 through PHP-FPM, MariaDB tuned for low memory, Composer,
+the Laravel scheduler and a queue worker. 1 GB of RAM is enough.
+
+```sh
+mkdir -p ~/test-dev
+qemu-img create -f qcow2 ~/test-db.qcow2 4G             # optional: keeps the database
+qemu-system-x86_64 -enable-kvm -m 1024 -smp 2 -cdrom iso/alpine-test-edge-x86_64.iso \
+  -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:8080-:80,hostfwd=tcp:127.0.0.1:3307-:3306,hostfwd=tcp:127.0.0.1:2222-:22 \
+  -virtfs local,path="$HOME/test-dev",mount_tag=www,security_model=none,id=www \
+  -drive file="$HOME/test-db.qcow2",if=virtio,format=qcow2
+```
+
+- An empty shared directory gets a new Laravel project on first boot
+  (`composer create-project`, needs internet; about 15 seconds plus copying).
+  Its `.env` is set up for MariaDB and the migrations have run. Offline, or
+  with `LARAVEL_CREATE=no`, it gets a starter `index.php` instead. To create
+  the project again, empty the directory and reboot.
+- If `public/index.php` exists, `public/` is served (Laravel, Symfony, ...);
+  otherwise the directory itself. Requests for anything that isn't a file go
+  to `index.php`. After switching between the two layouts, run
+  `rc-service lighttpd restart` in the VM.
+- `php artisan schedule:run` runs every minute from cron, and
+  `php artisan queue:listen` runs as a service; both pick up code changes
+  without a restart. Queue output: `/var/log/test-queue.log`.
+- Database `app`, user `app`, password `app`. In the VM, Laravel connects
+  through the socket (`DB_SOCKET=/run/mysqld/mysqld.sock`). From the host,
+  connect a database client to `127.0.0.1:3307`.
+- Run `composer` and `php artisan` inside the VM (over SSH or the console):
+  PHP and its extensions there match what the site runs on.
+- Node.js isn't included. Build front-end assets on the host
+  (`npm run build`), or run `npm run dev` on the host: Vite writes
+  `public/hot` into the shared directory and the browser loads assets from
+  the host's dev server.
+
 #### node
 
 ```sh
@@ -130,13 +168,13 @@ qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-x11-edge-x86_64.
 
 ### How sharing and persistence work
 
-- **Permissions.** The service in the VM (Apache, the Node app, the X
-  session) runs with the uid/gid that owns the shared directory on the host,
+- **Permissions.** The service in the VM (Apache, PHP-FPM, the Node app,
+  the X session) runs with the uid/gid that owns the shared directory on the host,
   so files created on either side stay editable on both. This relies on
   `security_model=none` in `-virtfs`.
 - **Without `-virtfs`** the shared directory lives in the VM's RAM instead.
 - **Database disk.** On first boot the first blank virtio disk is formatted
-  (ext4, labelled `wpdb`, `lampdb` or `nodedb`) and used for the database
+  (ext4, labelled `wpdb`, `lampdb`, `testdb` or `nodedb`) and used for the database
   from then on. Without it the database lives in RAM. Either way, anything
   kept in RAM is lost on poweroff.
 - **SSH.** Put your public key into `~/.ssh/authorized_keys` of the x11 shared
@@ -159,6 +197,10 @@ Set these as environment variables for the build (for example, add
 |             | `WP_VERSION`          | `latest`                 |
 |             | `WP_TARBALL`          | (download)               |
 | `lamp`      | `DB_NAME`, `DB_USER`, `DB_PASSWORD` | `app`      |
+| `test`      | `DB_NAME`, `DB_USER`, `DB_PASSWORD` | `app`      |
+|             | `APP_URL`             | `http://localhost:8080`  |
+|             | `LARAVEL_CREATE`      | `yes`                    |
+|             | `LARAVEL_VERSION`     | (latest)                 |
 | `node`      | `DB_NAME`, `DB_USER`, `DB_PASSWORD` | `app`      |
 |             | `APP_PORT`            | `3000`                   |
 |             | `POSTGRES_JS_VERSION` | `latest`                 |
