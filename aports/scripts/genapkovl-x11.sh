@@ -84,6 +84,7 @@ mkdir -p "$tmp"/etc/apk
 makefile root:root 0644 "$tmp"/etc/apk/world <<EOF
 alpine-base
 dbus
+dbus-openrc
 dbus-x11
 doas
 font-cursor-misc
@@ -105,6 +106,7 @@ novnc
 openal-soft-dev
 openbox
 openssh
+openssh-server-common-openrc
 pipewire
 pipewire-alsa
 pipewire-pulse

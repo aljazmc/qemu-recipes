@@ -7,6 +7,7 @@ profile_x11() {
     hostname="x11"
     apks="$apks
         dbus
+        dbus-openrc
         dbus-libs
         dbus-x11
         doas
@@ -29,6 +30,7 @@ profile_x11() {
         openal-soft-dev
         openbox
         openssh
+        openssh-server-common-openrc
         pipewire
         pipewire-alsa
         pipewire-pulse
