@@ -31,6 +31,7 @@ profile_lamp() {
         php84-pdo
         php84-pdo_mysql
         php84-phar
+        php84-posix
         php84-session
         php84-simplexml
         php84-sodium

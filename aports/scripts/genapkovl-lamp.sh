@@ -103,6 +103,7 @@ $PHP-openssl
 $PHP-pdo
 $PHP-pdo_mysql
 $PHP-phar
+$PHP-posix
 $PHP-session
 $PHP-simplexml
 $PHP-sodium
