@@ -23,8 +23,10 @@
 #   with the "postgres" client bundled so it works offline); existing files
 #   are never touched.
 # - The app is started with "npm start" (or server.js / index.js when there is
-#   no start script) and restarted whenever a file in the shared directory
-#   changes. node_modules and .git are not watched.
+#   no start script) and restarted whenever a source file in the shared
+#   directory changes (WATCH_EXT extensions and .env*). Files the app writes
+#   itself (logs, uploads, SQLite, ...) don't trigger a restart.
+#   node_modules and .git are not watched.
 # - "npm install" runs automatically when node_modules is missing or older
 #   than package.json (needs network). Install native modules from inside the
 #   guest, the guest is musl based.
@@ -137,6 +139,9 @@ PGDATABASE="\$DB_NAME"
 PGUSER="\$DB_USER"
 PGPASSWORD="\$DB_PASSWORD"
 DATABASE_URL="postgres://\$DB_USER:\$DB_PASSWORD@localhost:5432/\$DB_NAME"
+
+# file extensions that restart the app when changed (plus .env*)
+WATCH_EXT="js mjs cjs ts mts cts jsx tsx json"
 EOF
 
 # Keep the PostgreSQL config next to the data, so it persists on the DB disk.
@@ -404,9 +409,17 @@ cd "$WEBROOT" || exit 1
 
 child=
 
+# Only source files count, otherwise every log line or upload the app writes
+# into its own directory would restart it. The find name tests are built
+# into the positional parameters once and passed to snapshot.
+set -- -name '.env*'
+for ext in ${WATCH_EXT:-js mjs cjs ts mts cts jsx tsx json}; do
+	set -- "$@" -o -name "*.$ext"
+done
+
 snapshot() {
 	find . \( -path ./node_modules -o -path ./.git \) -prune \
-		-o -type f -exec stat -c '%Y %s %n' {} + 2>/dev/null | md5sum
+		-o -type f \( "$@" \) -exec stat -c '%Y %s %n' {} + 2>/dev/null | md5sum
 }
 
 stop_child() {
@@ -439,11 +452,11 @@ start_child() {
 
 trap 'stop_child; exit 0' TERM INT
 
-last=$(snapshot)
+last=$(snapshot "$@")
 start_child
 while :; do
 	sleep 1
-	now=$(snapshot)
+	now=$(snapshot "$@")
 	if [ "$now" != "$last" ]; then
 		last=$now
 		echo "node-dev-run: change detected, restarting"
