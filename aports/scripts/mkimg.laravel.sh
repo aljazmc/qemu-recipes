@@ -1,10 +1,10 @@
-profile_test() {
+profile_laravel() {
     profile_virt
     kernel_flavors="virt"
-    title="Lightweight LAMP"
+    title="Laravel"
     desc="Lightweight LAMP-like server for Laravel (lighttpd, PHP 8.5 FPM, MariaDB)"
-    profile_abbrev="test"
-    hostname="test"
+    profile_abbrev="laravel"
+    hostname="laravel"
     apks="$apks
         blkid
         composer
@@ -46,5 +46,5 @@ profile_test() {
         php85-zip
         sqlite
     "
-    apkovl="aports/scripts/genapkovl-test.sh"
+    apkovl="aports/scripts/genapkovl-laravel.sh"
 }

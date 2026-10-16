@@ -1,6 +1,6 @@
 #!/bin/sh -e
-# genapkovl-test.sh - build the boot overlay (apkovl) for the "test" profile
-# Installed by mkimg.test.sh via apkovl
+# genapkovl-laravel.sh - build the boot overlay (apkovl) for the "laravel" profile
+# Installed by mkimg.laravel.sh via apkovl
 #
 # The resulting VM boots straight into a lightweight LAMP-like stack that can
 # run a full Laravel project: lighttpd + PHP 8.5 (FPM) + MariaDB, Composer,
@@ -10,13 +10,13 @@
 # Host <-> guest sharing of the served root (/var/www/html) is done with
 # virtio-9p. Start QEMU with e.g.:
 #
-#   mkdir -p ~/test-dev
-#   qemu-img create -f qcow2 ~/test-db.qcow2 4G     # optional, keeps the DB
+#   mkdir -p ~/laravel-dev
+#   qemu-img create -f qcow2 ~/laravel-db.qcow2 4G     # optional, keeps the DB
 #   qemu-system-x86_64 -enable-kvm -m 1024 -smp 2 \
-#       -cdrom iso/alpine-test-edge-x86_64.iso \
+#       -cdrom iso/alpine-laravel-edge-x86_64.iso \
 #       -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:8080-:80,hostfwd=tcp:127.0.0.1:3307-:3306,hostfwd=tcp:127.0.0.1:2222-:22 \
-#       -virtfs local,path="$HOME/test-dev",mount_tag=www,security_model=none,id=www \
-#       -drive file="$HOME/test-db.qcow2",if=virtio,format=qcow2
+#       -virtfs local,path="$HOME/laravel-dev",mount_tag=www,security_model=none,id=www \
+#       -drive file="$HOME/laravel-db.qcow2",if=virtio,format=qcow2
 #
 # and open http://localhost:8080.
 #
@@ -36,7 +36,7 @@
 #   below).
 # - Without -virtfs the served root lives in RAM; without the extra virtio
 #   disk the database lives in RAM. Both are then lost on poweroff.
-# - A blank virtio disk is formatted (ext4, label "testdb") on first boot and
+# - A blank virtio disk is formatted (ext4, label "laraveldb") on first boot and
 #   used for MariaDB data from then on.
 #
 # Build-time settings (environment variables):
@@ -47,9 +47,9 @@
 #   LARAVEL_CREATE   create a Laravel project in an empty root [yes]
 #   LARAVEL_VERSION  laravel/laravel version constraint        [latest]
 #
-# They end up in /etc/conf.d/test in the guest.
+# They end up in /etc/conf.d/laravel in the guest.
 
-HOSTNAME="${1:-test}"
+HOSTNAME="${1:-laravel}"
 
 : "${DB_NAME:=app}"
 : "${DB_USER:=app}"
@@ -139,22 +139,22 @@ EOF
 
 # --- 9p (host shared folder) kernel modules ----------------------------------
 mkdir -p "$tmp"/etc/modules-load.d
-makefile root:root 0644 "$tmp"/etc/modules-load.d/test.conf <<EOF
+makefile root:root 0644 "$tmp"/etc/modules-load.d/laravel.conf <<EOF
 9pnet_virtio
 9p
 EOF
 
-# --- Settings shared by the test-* services ----------------------------------
-# Readable by the web user: it is sourced by test-queue-run.
+# --- Settings shared by the laravel-* services ----------------------------------
+# Readable by the web user: it is sourced by laravel-queue-run.
 mkdir -p "$tmp"/etc/conf.d
-makefile root:root 0644 "$tmp"/etc/conf.d/test <<EOF
-# Settings for /etc/init.d/test-prep, test-init, test-queue and helpers
+makefile root:root 0644 "$tmp"/etc/conf.d/laravel <<EOF
+# Settings for /etc/init.d/laravel-prep, laravel-init, laravel-queue and helpers
 
 WEBROOT="/var/www/html"
 # virtio-9p mount_tag of the host shared folder (-virtfs ...,mount_tag=www)
 SHARE_TAG="www"
 # filesystem label of the persistent MariaDB disk
-DB_LABEL="testdb"
+DB_LABEL="laraveldb"
 
 DB_NAME="$DB_NAME"
 DB_USER="$DB_USER"
@@ -193,7 +193,7 @@ server.network-backend   = "writev"
 server.max-request-size = 65536
 
 # public/ when it has an index.php (Laravel), else the root itself
-include_shell "/usr/local/bin/test-docroot"
+include_shell "/usr/local/bin/laravel-docroot"
 
 index-file.names = ( "index.php", "index.html" )
 
@@ -207,17 +207,17 @@ url.rewrite-if-not-file = ( "" => "/index.php${url.path}${qsa}" )
 
 fastcgi.server = (
     ".php" => ((
-        "socket" => "/run/php-fpm/test.sock",
+        "socket" => "/run/php-fpm/laravel.sock",
         "broken-scriptfilename" => "enable",
     )),
 )
 EOF
 
 mkdir -p "$tmp"/usr/local/bin
-makefile root:root 0755 "$tmp"/usr/local/bin/test-docroot <<'EOF'
+makefile root:root 0755 "$tmp"/usr/local/bin/laravel-docroot <<'EOF'
 #!/bin/sh
-# test-docroot - print lighttpd's document root (used via include_shell)
-. /etc/conf.d/test
+# laravel-docroot - print lighttpd's document root (used via include_shell)
+. /etc/conf.d/laravel
 if [ -f "$WEBROOT/public/index.php" ]; then
 	echo "server.document-root = \"$WEBROOT/public\""
 else
@@ -227,7 +227,7 @@ EOF
 
 # --- PHP ----------------------------------------------------------------------
 mkdir -p "$tmp"/etc/$PHP/conf.d
-makefile root:root 0644 "$tmp"/etc/$PHP/conf.d/zzz-test.ini <<'EOF'
+makefile root:root 0644 "$tmp"/etc/$PHP/conf.d/zzz-laravel.ini <<'EOF'
 upload_max_filesize = 64M
 post_max_size = 64M
 memory_limit = 256M
@@ -244,7 +244,7 @@ EOF
 
 # --- MariaDB: small footprint, reachable over TCP for host tools ------------
 mkdir -p "$tmp"/etc/my.cnf.d
-makefile root:root 0644 "$tmp"/etc/my.cnf.d/zz-test.cnf <<'EOF'
+makefile root:root 0644 "$tmp"/etc/my.cnf.d/zz-laravel.cnf <<'EOF'
 [mysqld]
 skip-networking = 0
 bind-address = 0.0.0.0
@@ -259,7 +259,7 @@ EOF
 
 # --- Service: mount share, set up users, prepare DB storage -----------------
 mkdir -p "$tmp"/etc/init.d
-makefile root:root 0755 "$tmp"/etc/init.d/test-prep <<'EOF'
+makefile root:root 0755 "$tmp"/etc/init.d/laravel-prep <<'EOF'
 #!/sbin/openrc-run
 
 description="Mount the shared web root, set up the web user, prepare MariaDB storage"
@@ -267,10 +267,10 @@ description="Mount the shared web root, set up the web user, prepare MariaDB sto
 depend() {
 	need localmount
 	after modules
-	before mariadb php-fpm85 lighttpd crond test-init test-queue
+	before mariadb php-fpm85 lighttpd crond laravel-init laravel-queue
 }
 
-. /etc/conf.d/test
+. /etc/conf.d/laravel
 
 mount_share() {
 	mountpoint -q "$WEBROOT" && return 0
@@ -315,16 +315,16 @@ setup_owner() {
 
 	# composer cache etc. must not end up in the shared directory
 	install -d -o "$user" -g "$group" /var/cache/www-dev
-	touch /var/log/test-queue.log /var/log/php-fpm-test.log
-	chown "$user:$group" /var/log/test-queue.log /var/log/php-fpm-test.log
+	touch /var/log/laravel-queue.log /var/log/php-fpm-laravel.log
+	chown "$user:$group" /var/log/laravel-queue.log /var/log/php-fpm-laravel.log
 
 	# PHP-FPM pool, replaces the default "www" pool
 	cat > /etc/$PHP/php-fpm.d/www.conf <<-CONF
-	; Generated by /etc/init.d/test-prep
+	; Generated by /etc/init.d/laravel-prep
 	[www]
 	user = $user
 	group = $group
-	listen = /run/php-fpm/test.sock
+	listen = /run/php-fpm/laravel.sock
 	listen.owner = lighttpd
 	listen.group = lighttpd
 	listen.mode = 0660
@@ -332,7 +332,7 @@ setup_owner() {
 	pm.max_children = 8
 	pm.process_idle_timeout = 30s
 	catch_workers_output = yes
-	php_admin_value[error_log] = /var/log/php-fpm-test.log
+	php_admin_value[error_log] = /var/log/php-fpm-laravel.log
 	CONF
 	mkdir -p /run/php-fpm
 
@@ -341,14 +341,14 @@ setup_owner() {
 	* * * * * [ -f $WEBROOT/artisan ] && cd $WEBROOT && php artisan schedule:run >/dev/null 2>&1
 	CRON
 
-	echo "$user:$group" > /run/test-owner
+	echo "$user:$group" > /run/laravel-owner
 	einfo "PHP runs as $user:$group"
 }
 
 # Use a virtio disk labelled $DB_LABEL for MariaDB, formatting the first
 # blank (no filesystem, no partitions) virtio disk on first boot.
 prepare_db_storage() {
-	local dev= d= n= data=/var/lib/test-data
+	local dev= d= n= data=/var/lib/laravel-data
 
 	dev=$(blkid -L "$DB_LABEL" 2>/dev/null) || dev=
 	if [ -z "$dev" ]; then
@@ -395,18 +395,18 @@ start() {
 EOF
 
 # --- Service: database, first-boot project -----------------------------------
-makefile root:root 0755 "$tmp"/etc/init.d/test-init <<'EOF'
+makefile root:root 0755 "$tmp"/etc/init.d/laravel-init <<'EOF'
 #!/sbin/openrc-run
 
 description="Create the application database and populate an empty web root"
 
 depend() {
-	need mariadb test-prep
+	need mariadb laravel-prep
 	use net
-	before lighttpd php-fpm85 test-queue
+	before lighttpd php-fpm85 laravel-queue
 }
 
-. /etc/conf.d/test
+. /etc/conf.d/laravel
 
 as_owner() {
 	su -s /bin/sh "${owner%%:*}" -c "umask 022; export HOME=/var/cache/www-dev; $1"
@@ -435,10 +435,10 @@ create_laravel() {
 
 	ebegin "Creating Laravel project (composer, needs network)"
 	if as_owner "COMPOSER_NO_CACHE=1 composer create-project --no-cache --no-interaction --no-progress --prefer-dist $pkg $WEBROOT" \
-			> /var/log/test-laravel-create.log 2>&1; then
+			> /var/log/laravel-create.log 2>&1; then
 		eend 0
 	else
-		eend 1 "see /var/log/test-laravel-create.log"
+		eend 1 "see /var/log/laravel-create.log"
 		# leave the root empty again, the starter page goes in instead
 		find "$WEBROOT" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
 		return 1
@@ -464,7 +464,7 @@ create_laravel() {
 
 	ebegin "Running Laravel migrations"
 	as_owner "cd $WEBROOT && php artisan migrate --force --no-interaction" \
-		>> /var/log/test-laravel-create.log 2>&1
+		>> /var/log/laravel-create.log 2>&1
 	eend $?
 }
 
@@ -472,7 +472,7 @@ create_starter() {
 	ebegin "Writing starter index.php into $WEBROOT"
 	cat > "$WEBROOT"/index.php <<-PHP
 	<?php
-	// Starter page generated by /etc/init.d/test-init - replace freely.
+	// Starter page generated by /etc/init.d/laravel-init - replace freely.
 	mysqli_report( MYSQLI_REPORT_OFF );
 	\$db = @new mysqli( 'localhost', '$DB_USER', '$DB_PASSWORD', '$DB_NAME' );
 	?>
@@ -491,7 +491,7 @@ create_starter() {
 }
 
 start() {
-	owner=$(cat /run/test-owner)
+	owner=$(cat /run/laravel-owner)
 
 	create_db || return 1
 
@@ -504,34 +504,34 @@ start() {
 EOF
 
 # --- Service: Laravel queue worker -------------------------------------------
-makefile root:root 0755 "$tmp"/etc/init.d/test-queue <<'EOF'
+makefile root:root 0755 "$tmp"/etc/init.d/laravel-queue <<'EOF'
 #!/sbin/openrc-run
 
 description="Laravel queue worker (idle when the web root has no artisan)"
 
 supervisor=supervise-daemon
-command=/usr/local/bin/test-queue-run
-output_log=/var/log/test-queue.log
-error_log=/var/log/test-queue.log
+command=/usr/local/bin/laravel-queue-run
+output_log=/var/log/laravel-queue.log
+error_log=/var/log/laravel-queue.log
 respawn_delay=5
 respawn_max=0
 
 depend() {
-	need test-prep mariadb
-	after test-init
+	need laravel-prep mariadb
+	after laravel-init
 }
 
 start_pre() {
-	command_user=$(cat /run/test-owner)
+	command_user=$(cat /run/laravel-owner)
 }
 EOF
 
-makefile root:root 0755 "$tmp"/usr/local/bin/test-queue-run <<'EOF'
+makefile root:root 0755 "$tmp"/usr/local/bin/laravel-queue-run <<'EOF'
 #!/bin/sh
-# test-queue-run - run "php artisan queue:listen" once the web root is a
+# laravel-queue-run - run "php artisan queue:listen" once the web root is a
 # Laravel project. queue:listen boots the app per job, so code changes made
 # on the host are picked up without restarting.
-. /etc/conf.d/test
+. /etc/conf.d/laravel
 export HOME=/var/cache/www-dev
 cd "$WEBROOT" || exit 1
 while [ ! -f artisan ] || [ ! -d vendor ]; do
@@ -547,7 +547,7 @@ done
 for svc in hwclock modules sysctl hostname bootmisc syslog; do
 	rc_add "$svc" boot
 done
-for svc in networking sshd crond test-prep mariadb test-init php-fpm85 lighttpd test-queue; do
+for svc in networking sshd crond laravel-prep mariadb laravel-init php-fpm85 lighttpd laravel-queue; do
 	rc_add "$svc" default
 done
 for svc in mount-ro killprocs savecache; do

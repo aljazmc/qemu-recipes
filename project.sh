@@ -12,13 +12,13 @@ find . -mindepth 2 -maxdepth 2 \
 find aports/scripts -mindepth 1 -maxdepth 1 \
     | sed "
         /aports\/scripts\/genapkovl-lamp.sh/d;
+        /aports\/scripts\/genapkovl-laravel.sh/d;
         /aports\/scripts\/genapkovl-node.sh/d;
-        /aports\/scripts\/genapkovl-test.sh/d;
         /aports\/scripts\/genapkovl-wordpress.sh/d;
         /aports\/scripts\/genapkovl-x11.sh/d;
         /aports\/scripts\/mkimg.lamp.sh/d;
+        /aports\/scripts\/mkimg.laravel.sh/d;
         /aports\/scripts\/mkimg.node.sh/d;
-        /aports\/scripts\/mkimg.test.sh/d;
         /aports\/scripts\/mkimg.wordpress.sh/d;
         /aports\/scripts\/mkimg.x11.sh/d;
     " \
@@ -38,7 +38,7 @@ if [ ! -d aports/main ]; then
 
 fi
 
-docker compose run --rm spinner "sh aports/scripts/mkimage.sh --tag edge --outdir iso --arch x86_64 --repository https://dl-cdn.alpinelinux.org/alpine/edge/main --repository https://dl-cdn.alpinelinux.org/alpine/edge/community --profile test"
+docker compose run --rm spinner "sh aports/scripts/mkimage.sh --tag edge --outdir iso --arch x86_64 --repository https://dl-cdn.alpinelinux.org/alpine/edge/main --repository https://dl-cdn.alpinelinux.org/alpine/edge/community --profile laravel"
 
 }
 
