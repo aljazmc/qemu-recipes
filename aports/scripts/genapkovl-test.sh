@@ -409,7 +409,7 @@ depend() {
 . /etc/conf.d/test
 
 as_owner() {
-	su -s /bin/sh "${owner%%:*}" -c "export HOME=/var/cache/www-dev; $1"
+	su -s /bin/sh "${owner%%:*}" -c "umask 022; export HOME=/var/cache/www-dev; $1"
 }
 
 create_db() {
@@ -425,21 +425,22 @@ create_db() {
 	eend $?
 }
 
-# composer create-project in RAM, then copy into the (empty) web root
+# composer create-project straight into the (empty) web root. The root
+# filesystem is a RAM disk too small for a full vendor/, so nothing big may
+# land there: no composer cache, no temp copy.
 create_laravel() {
-	local tmp pkg=laravel/laravel
+	local pkg=laravel/laravel
 
 	[ -n "$LARAVEL_VERSION" ] && pkg="$pkg:$LARAVEL_VERSION"
-	tmp=$(mktemp -d)
-	chown "$owner" "$tmp"
 
 	ebegin "Creating Laravel project (composer, needs network)"
-	if as_owner "cd $tmp && composer create-project --no-interaction --no-progress --prefer-dist $pkg app" \
+	if as_owner "COMPOSER_NO_CACHE=1 composer create-project --no-cache --no-interaction --no-progress --prefer-dist $pkg $WEBROOT" \
 			> /var/log/test-laravel-create.log 2>&1; then
 		eend 0
 	else
 		eend 1 "see /var/log/test-laravel-create.log"
-		rm -rf "$tmp"
+		# leave the root empty again, the starter page goes in instead
+		find "$WEBROOT" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
 		return 1
 	fi
 
@@ -447,8 +448,8 @@ create_laravel() {
 	sed -i -E \
 		-e '/^#? ?DB_(CONNECTION|HOST|PORT|DATABASE|USERNAME|PASSWORD|SOCKET)=/d' \
 		-e '/^APP_URL=/d' \
-		"$tmp"/app/.env
-	cat >> "$tmp"/app/.env <<-ENV
+		"$WEBROOT"/.env
+	cat >> "$WEBROOT"/.env <<-ENV
 
 	APP_URL=$APP_URL
 	DB_CONNECTION=mysql
@@ -459,17 +460,12 @@ create_laravel() {
 	DB_USERNAME=$DB_USER
 	DB_PASSWORD=$DB_PASSWORD
 	ENV
-	rm -f "$tmp"/app/database/database.sqlite
+	rm -f "$WEBROOT"/database/database.sqlite
 
 	ebegin "Running Laravel migrations"
-	as_owner "cd $tmp/app && php artisan migrate --force --no-interaction" \
+	as_owner "cd $WEBROOT && php artisan migrate --force --no-interaction" \
 		>> /var/log/test-laravel-create.log 2>&1
 	eend $?
-
-	ebegin "Copying Laravel project into $WEBROOT"
-	cp -a "$tmp"/app/. "$WEBROOT"/
-	eend $?
-	rm -rf "$tmp"
 }
 
 create_starter() {
