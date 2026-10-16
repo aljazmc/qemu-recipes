@@ -7,11 +7,14 @@ profile_wordpress() {
     hostname="wordpress"
     apks="$apks
         apache2
+        apache2-openrc
         blkid
         e2fsprogs
         mariadb
         mariadb-client
+        mariadb-openrc
         openssh
+        openssh-server-common-openrc
         php84
         php84-apache2
         php84-ctype
