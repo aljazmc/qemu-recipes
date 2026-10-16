@@ -1,17 +1,50 @@
 profile_test() {
     profile_virt
     kernel_flavors="virt"
-    title="LAMP WordPress Server"
-    desc="LAMP WordPress Server"
+    title="Lightweight LAMP"
+    desc="Lightweight LAMP-like server for Laravel (lighttpd, PHP 8.5 FPM, MariaDB)"
     profile_abbrev="test"
+    hostname="test"
     apks="$apks
-        apache2
-        php83 php83-apache2 php83-mysqli php83-session php83-gd
-        php83-curl php83-mbstring php83-xml php83-zip php83-opcache
-        php83-json php83-openssl php83-phar php83-iconv php83-dom
-        php83-simplexml php83-fileinfo
-        mariadb mariadb-client
-        openssh wget unzip
+        blkid
+        composer
+        e2fsprogs
+        lighttpd
+        lighttpd-openrc
+        mariadb
+        mariadb-client
+        mariadb-openrc
+        openssh
+        openssh-server-common-openrc
+        php85
+        php85-bcmath
+        php85-ctype
+        php85-curl
+        php85-dom
+        php85-exif
+        php85-fileinfo
+        php85-fpm
+        php85-gd
+        php85-iconv
+        php85-intl
+        php85-mbstring
+        php85-mysqli
+        php85-openssl
+        php85-pcntl
+        php85-pdo
+        php85-pdo_mysql
+        php85-pdo_sqlite
+        php85-phar
+        php85-posix
+        php85-session
+        php85-simplexml
+        php85-sodium
+        php85-tokenizer
+        php85-xml
+        php85-xmlreader
+        php85-xmlwriter
+        php85-zip
+        sqlite
     "
     apkovl="aports/scripts/genapkovl-test.sh"
 }
