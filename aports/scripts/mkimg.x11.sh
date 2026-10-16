@@ -2,40 +2,50 @@ profile_x11() {
     profile_virt
     kernel_flavors="virt"
     title="x11"
-    desc="x11 Desktop"
+    desc="X11 desktop (openbox) served over VNC and noVNC"
     profile_abbrev="x11"
+    hostname="x11"
     apks="$apks
-       dbus
-       dbus-libs
-       eudev
-       gcompat
-       glu-dev
-       kbd
-       kbd-bkeymaps
-       libjpeg-turbo-dev
-       libpng-dev
-       libstdc++
-       libuv-dev
-       libvorbis-dev
-       mbedtls-dev
-       mesa-dev
-       mesa-dri-gallium
-       openal-soft-dev
-       openbox
-       openssh
-       pipewire
-       pipewire-alsa
-       pipewire-pulse
-       sdl3-dev
-       sqlite-dev
-       vulkan-loader-dev
-       wireplumber
-       xauth
-       xf86-input-libinput
-       xf86-video-fbdev
-       xf86-video-vesa
-       xinit
-       xorg-server
-       xterm
+        dbus
+        dbus-libs
+        dbus-x11
+        doas
+        font-cursor-misc
+        font-dejavu
+        font-misc-misc
+        gcompat
+        glu-dev
+        kbd
+        kbd-bkeymaps
+        libjpeg-turbo-dev
+        libpng-dev
+        libstdc++
+        libuv-dev
+        libvorbis-dev
+        mbedtls-dev
+        mesa-dev
+        mesa-dri-gallium
+        novnc
+        openal-soft-dev
+        openbox
+        openssh
+        pipewire
+        pipewire-alsa
+        pipewire-pulse
+        py3-xdg
+        sdl3-dev
+        setxkbmap
+        sqlite-dev
+        tigervnc
+        vulkan-loader-dev
+        websockify
+        wireplumber
+        xauth
+        xkbcomp
+        xkeyboard-config
+        xrandr
+        xsetroot
+        xterm
     "
+    apkovl="aports/scripts/genapkovl-x11.sh"
 }
