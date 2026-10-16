@@ -60,24 +60,6 @@ port 2222. Keep the shared directories **outside** this repository (see
   bootable and fell back to network boot. That usually means the ISO wasn't
   attached as a CD: check that the `-cdrom` path points to the built ISO.
 
-#### wordpress
-
-```sh
-mkdir -p ~/wordpress-dev
-qemu-img create -f qcow2 ~/wordpress-db.qcow2 4G        # optional: keeps the database
-qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-wordpress-edge-x86_64.iso \
-  -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:8080-:80,hostfwd=tcp:127.0.0.1:2222-:22 \
-  -virtfs local,path="$HOME/wordpress-dev",mount_tag=wordpress,security_model=none,id=wordpress \
-  -drive file="$HOME/wordpress-db.qcow2",if=virtio,format=qcow2
-```
-
-- An empty shared directory gets WordPress core and `wp-config.php` on first
-  boot; existing files are never overwritten. WordPress is bundled in the
-  image, so the first boot works offline.
-- The site is installed already: log in at `/wp-admin` as `admin` / `admin`.
-- The site URL follows the host and port you open it with.
-- `WP_DEBUG` is on, with errors logged to `wp-content/debug.log`.
-
 #### lamp
 
 ```sh
@@ -93,6 +75,35 @@ qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-lamp-edge-x86_64
   database check). PHP errors are shown on the page.
 - Database `app`, user `app`, password `app`:
   `new mysqli('localhost', 'app', 'app', 'app')`.
+
+#### node
+
+```sh
+mkdir -p ~/node-dev
+qemu-img create -f qcow2 ~/node-db.qcow2 4G             # optional: keeps the database
+qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-node-edge-x86_64.iso \
+  -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:8080-:3000,hostfwd=tcp:127.0.0.1:2222-:22 \
+  -virtfs local,path="$HOME/node-dev",mount_tag=www,security_model=none,id=www \
+  -drive file="$HOME/node-db.qcow2",if=virtio,format=qcow2
+```
+
+- The app listens on port 3000 in the guest.
+- An empty shared directory gets a starter `package.json` and `server.js`.
+  The `postgres` client is bundled, so it works offline.
+- The VM runs `npm start` (or `server.js` / `index.js`) and restarts the app
+  within a few seconds of a change to a source file (`.js`, `.mjs`, `.cjs`,
+  `.ts`, `.mts`, `.cts`, `.jsx`, `.tsx`, `.json`) or `.env*`. Files the app
+  writes itself (logs, uploads, SQLite databases) don't trigger a restart.
+  `node_modules` and `.git` are ignored. Change the list with `WATCH_EXT` in
+  `/etc/conf.d/node` in the VM.
+- `npm install` runs automatically when `node_modules` is missing or older
+  than `package.json` (needs internet). Install packages with native code
+  inside the VM: the guest is musl based, so modules built on a glibc host
+  won't load.
+- The app gets `DATABASE_URL`, `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`,
+  `PGPASSWORD`, `PORT` and `NODE_ENV` in its environment. Database `app`,
+  user `app`, password `app`.
+- App output: `/var/log/node-app.log` in the guest.
 
 #### test
 
@@ -132,31 +143,23 @@ qemu-system-x86_64 -enable-kvm -m 1024 -smp 2 -cdrom iso/alpine-test-edge-x86_64
   `public/hot` into the shared directory and the browser loads assets from
   the host's dev server.
 
-#### node
+#### wordpress
 
 ```sh
-mkdir -p ~/node-dev
-qemu-img create -f qcow2 ~/node-db.qcow2 4G             # optional: keeps the database
-qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-node-edge-x86_64.iso \
-  -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:8080-:3000,hostfwd=tcp:127.0.0.1:2222-:22 \
-  -virtfs local,path="$HOME/node-dev",mount_tag=www,security_model=none,id=www \
-  -drive file="$HOME/node-db.qcow2",if=virtio,format=qcow2
+mkdir -p ~/wordpress-dev
+qemu-img create -f qcow2 ~/wordpress-db.qcow2 4G        # optional: keeps the database
+qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-wordpress-edge-x86_64.iso \
+  -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:8080-:80,hostfwd=tcp:127.0.0.1:2222-:22 \
+  -virtfs local,path="$HOME/wordpress-dev",mount_tag=wordpress,security_model=none,id=wordpress \
+  -drive file="$HOME/wordpress-db.qcow2",if=virtio,format=qcow2
 ```
 
-- The app listens on port 3000 in the guest.
-- An empty shared directory gets a starter `package.json` and `server.js`.
-  The `postgres` client is bundled, so it works offline.
-- The VM runs `npm start` (or `server.js` / `index.js`) and restarts the app
-  within about a second of any file change. `node_modules` and `.git` are
-  ignored.
-- `npm install` runs automatically when `node_modules` is missing or older
-  than `package.json` (needs internet). Install packages with native code
-  inside the VM: the guest is musl based, so modules built on a glibc host
-  won't load.
-- The app gets `DATABASE_URL`, `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`,
-  `PGPASSWORD`, `PORT` and `NODE_ENV` in its environment. Database `app`,
-  user `app`, password `app`.
-- App output: `/var/log/node-app.log` in the guest.
+- An empty shared directory gets WordPress core and `wp-config.php` on first
+  boot; existing files are never overwritten. WordPress is bundled in the
+  image, so the first boot works offline.
+- The site is installed already: log in at `/wp-admin` as `admin` / `admin`.
+- The site URL follows the host and port you open it with.
+- `WP_DEBUG` is on, with errors logged to `wp-content/debug.log`.
 
 #### x11
 
