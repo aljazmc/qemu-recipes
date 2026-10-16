@@ -11,6 +11,7 @@ profile_node() {
         nodejs
         npm
         openssh
+        openssh-server-common-openrc
         postgresql18
         postgresql18-client
         postgresql18-openrc

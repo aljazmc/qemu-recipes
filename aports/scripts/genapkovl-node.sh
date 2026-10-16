@@ -98,6 +98,7 @@ e2fsprogs
 nodejs
 npm
 openssh
+openssh-server-common-openrc
 $PG
 $PG-client
 $PG-openrc
