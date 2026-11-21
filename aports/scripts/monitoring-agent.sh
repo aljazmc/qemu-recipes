@@ -22,13 +22,15 @@
 # Needs $tmp, makefile and rc_add from the calling script. The packages in
 # MONITORING_AGENT_APKS must also be listed in the profile's mkimg file.
 
+# shellcheck shell=sh disable=SC2154 # $tmp is set by the calling genapkovl-*.sh
+
 MONITORING_AGENT_APKS="avahi avahi-openrc dbus dbus-openrc
 prometheus-node-exporter prometheus-node-exporter-openrc
 zabbix-agent2 zabbix-agent2-openrc"
 
 # monitoring_agent <profile> [<key>=<value>...]: extra TXT records
 monitoring_agent() {
-	local profile=$1 txt
+	local profile="$1" txt
 	shift
 
 	for txt in $MONITORING_AGENT_APKS; do

@@ -1,3 +1,7 @@
+# shellcheck shell=sh disable=SC2034,SC2154
+# Sourced by aports' mkimage.sh, which sets image_ext etc. and reads the
+# variables set here (title, apks, apkovl, output_filename, ...)
+
 profile_django() {
     profile_virt
     kernel_flavors="virt"

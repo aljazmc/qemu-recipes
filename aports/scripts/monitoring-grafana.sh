@@ -14,6 +14,8 @@
 #
 # Needs $tmp and makefile from the calling script.
 
+# shellcheck shell=sh disable=SC2154 # $tmp is set by the calling genapkovl-*.sh
+
 : "${GRAFANA_ADMIN_USER:=admin}"
 : "${GRAFANA_ADMIN_PASSWORD:=admin}"
 : "${GRAFANA_ZABBIX_PLUGIN_VERSION:=latest}"
@@ -22,7 +24,7 @@ GRAFANA_PLUGINS_DIR=/usr/share/qemu-recipes/grafana-plugins
 
 # grafana_setup <shared dashboards dir in the guest>
 grafana_setup() {
-	local shared=$1
+	local shared="$1"
 
 	printf '%s\n' grafana grafana-openrc >> "$tmp"/etc/apk/world
 

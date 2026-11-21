@@ -30,6 +30,9 @@
 # Exit status is 0 only if every tested profile passes. On failure the work
 # directory (serial logs, shared directory, fetched pages) is kept for a look.
 
+# The checks are run by wait_for, which ShellCheck cannot see
+# shellcheck disable=SC2329
+
 set -u
 
 cd "$(dirname "$0")/.." || exit 1
@@ -105,6 +108,8 @@ wait_for() {
 # --- Profiles ------------------------------------------------------------------
 
 iso_of() {
+	# ls, not a bare glob: prints nothing when there is no ISO
+	# shellcheck disable=SC2012
 	ls iso/alpine-*-"$1"-x86_64.iso 2> /dev/null | sort -V | tail -n 1
 }
 
@@ -153,6 +158,7 @@ start_vm() {
 	mkdir -p "$dir/share"
 	if [ "$profile" != x11 ]; then
 		qemu-img create -q -f qcow2 "$dir/disk.qcow2" 8G || return 1
+		# shellcheck disable=SC2054 # commas are part of the QEMU option
 		disk=(-drive file="$dir/disk.qcow2",if=virtio,format=qcow2)
 	fi
 	# shellcheck disable=SC2086
@@ -160,7 +166,7 @@ start_vm() {
 		-display none -serial file:"$dir/serial.log" -monitor none \
 		-nic user,model=virtio-net-pci${fwd:+,$fwd} \
 		-nic socket,model=virtio-net-pci,mcast="$MCAST",localaddr=127.0.0.1 \
-		-virtfs local,path="$dir/share",mount_tag="$tag",security_model=none,id="$tag" \
+		-virtfs "local,path=$dir/share,mount_tag=$tag,security_model=none,id=$tag" \
 		"${disk[@]}" > "$dir/qemu.log" 2>&1 &
 	echo $!
 }

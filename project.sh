@@ -1,6 +1,7 @@
 #!/bin/sh
 
 ALPINE_VERSION=3.24
+SHELLCHECK_VERSION=v0.11.0
 
 clean() {
 
@@ -8,6 +9,7 @@ find . -mindepth 2 -maxdepth 2 \
     | sed "
         /aports\/scripts/d;
         /\.\/\.git/d;
+        /\.\/\.github/d;
         /\.\/tests/d;
     " \
     | xargs -I {} rm -rf {}
@@ -42,6 +44,15 @@ find aports/scripts -mindepth 1 -maxdepth 1 \
     | xargs -I {} rm -rf {}
 
 rm -rf .abuild alpine.qcow2 .ash_history iso
+
+}
+
+lint() {
+
+## shellcheck the project's own scripts (not the rest of aports)
+
+git ls-files -z project.sh '*.sh' \
+    | xargs -0 docker run --rm -v "$PWD:/mnt" -w /mnt "koalaman/shellcheck:${SHELLCHECK_VERSION}"
 
 }
 

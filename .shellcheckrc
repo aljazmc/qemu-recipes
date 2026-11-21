@@ -1,0 +1,9 @@
+# ShellCheck settings for this project (run: ./project.sh lint)
+
+# Follow `. "$(dirname "$0")"/monitoring-agent.sh` and friends
+external-sources=true
+source-path=SCRIPTDIR
+
+# `local` is not POSIX, but busybox ash (Alpine) and dash support it, as
+# do aports' own scripts
+disable=SC3043

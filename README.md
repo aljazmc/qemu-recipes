@@ -80,6 +80,16 @@ The test uses host ports 18080–18084 and the multicast group
 the work directory) are also available. A `laravel` image tested offline
 passes with its starter page.
 
+### Lint
+
+```sh
+./project.sh lint
+```
+
+Runs [ShellCheck](https://www.shellcheck.net) (in the `koalaman/shellcheck`
+container) on the project's own scripts, with the settings in `.shellcheckrc`.
+CI runs the same command on every push to `main` and every pull request.
+
 ### Run
 
 Run the commands from the repository root, since the ISO path is relative.
