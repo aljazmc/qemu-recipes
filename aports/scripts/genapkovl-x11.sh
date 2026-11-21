@@ -17,7 +17,7 @@
 #
 #   mkdir -p ~/x11-home
 #   qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 \
-#       -cdrom iso/alpine-x11-v3.24-x86_64.iso \
+#       -cdrom iso/alpine-v3.24-x11-x86_64.iso \
 #       -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:5900-:5900,hostfwd=tcp:127.0.0.1:6080-:6080,hostfwd=tcp:127.0.0.1:2222-:22 \
 #       -virtfs local,path="$HOME/x11-home",mount_tag=home,security_model=none,id=home
 #

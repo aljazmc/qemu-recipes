@@ -12,7 +12,7 @@
 #   mkdir -p ~/node-dev
 #   qemu-img create -f qcow2 ~/node-db.qcow2 4G     # optional, keeps the DB
 #   qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 \
-#       -cdrom iso/alpine-node-v3.24-x86_64.iso \
+#       -cdrom iso/alpine-v3.24-node-x86_64.iso \
 #       -nic user,model=virtio-net-pci,hostfwd=tcp::8080-:3000,hostfwd=tcp::2222-:22 \
 #       -virtfs local,path="$HOME/node-dev",mount_tag=www,security_model=none,id=www \
 #       -drive file="$HOME/node-db.qcow2",if=virtio,format=qcow2

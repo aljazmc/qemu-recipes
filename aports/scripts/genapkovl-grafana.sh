@@ -14,7 +14,7 @@
 #   mkdir -p ~/grafana-dev
 #   qemu-img create -f qcow2 ~/grafana-data.qcow2 2G   # optional, keeps the data
 #   qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 \
-#       -cdrom iso/alpine-grafana-v3.24-x86_64.iso \
+#       -cdrom iso/alpine-v3.24-grafana-x86_64.iso \
 #       -nic user,model=virtio-net-pci,hostfwd=tcp::3000-:3000,hostfwd=tcp::2222-:22 \
 #       -nic socket,model=virtio-net-pci,mcast=230.0.0.1:1234,localaddr=127.0.0.1 \
 #       -virtfs local,path="$HOME/grafana-dev",mount_tag=grafana,security_model=none,id=grafana \

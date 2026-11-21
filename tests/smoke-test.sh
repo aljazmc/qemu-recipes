@@ -105,7 +105,7 @@ wait_for() {
 # --- Profiles ------------------------------------------------------------------
 
 iso_of() {
-	ls iso/alpine-"$1"-*-x86_64.iso 2> /dev/null | sort -V | tail -n 1
+	ls iso/alpine-*-"$1"-x86_64.iso 2> /dev/null | sort -V | tail -n 1
 }
 
 mem_of() {

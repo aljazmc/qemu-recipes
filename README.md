@@ -53,7 +53,7 @@ docker compose run --rm spinner "sh aports/scripts/mkimage.sh --tag v3.24 --outd
   --profile wordpress"
 ```
 
-The result is `iso/alpine-<profile>-v3.24-x86_64.iso`.
+The result is `iso/alpine-v3.24-<profile>-x86_64.iso`.
 
 ### Smoke test
 
@@ -100,7 +100,7 @@ port 2222. Keep the shared directories **outside** this repository (see
 ```sh
 mkdir -p ~/django-dev
 qemu-img create -f qcow2 ~/django-db.qcow2 4G           # optional: keeps the database
-qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-django-v3.24-x86_64.iso \
+qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-v3.24-django-x86_64.iso \
   -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:8080-:8000,hostfwd=tcp:127.0.0.1:2222-:22 \
   -nic socket,model=virtio-net-pci,mcast=230.0.0.1:1234,localaddr=127.0.0.1 \
   -virtfs local,path="$HOME/django-dev",mount_tag=www,security_model=none,id=www \
@@ -128,7 +128,7 @@ qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-django-v3.24-x86
 ```sh
 mkdir -p ~/drupal-dev
 qemu-img create -f qcow2 ~/drupal-db.qcow2 4G           # optional: keeps the database
-qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-drupal-v3.24-x86_64.iso \
+qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-v3.24-drupal-x86_64.iso \
   -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:8080-:80,hostfwd=tcp:127.0.0.1:2222-:22 \
   -nic socket,model=virtio-net-pci,mcast=230.0.0.1:1234,localaddr=127.0.0.1 \
   -virtfs local,path="$HOME/drupal-dev",mount_tag=drupal,security_model=none,id=drupal \
@@ -155,7 +155,7 @@ qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-drupal-v3.24-x86
 ```sh
 mkdir -p ~/grafana-dev
 qemu-img create -f qcow2 ~/grafana-data.qcow2 2G        # optional: keeps the data
-qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-grafana-v3.24-x86_64.iso \
+qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-v3.24-grafana-x86_64.iso \
   -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:3000-:3000,hostfwd=tcp:127.0.0.1:2222-:22 \
   -nic socket,model=virtio-net-pci,mcast=230.0.0.1:1234,localaddr=127.0.0.1 \
   -virtfs local,path="$HOME/grafana-dev",mount_tag=grafana,security_model=none,id=grafana \
@@ -179,7 +179,7 @@ qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-grafana-v3.24-x8
 ```sh
 mkdir -p ~/joomla-dev
 qemu-img create -f qcow2 ~/joomla-db.qcow2 4G           # optional: keeps the database
-qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-joomla-v3.24-x86_64.iso \
+qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-v3.24-joomla-x86_64.iso \
   -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:8080-:80,hostfwd=tcp:127.0.0.1:2222-:22 \
   -nic socket,model=virtio-net-pci,mcast=230.0.0.1:1234,localaddr=127.0.0.1 \
   -virtfs local,path="$HOME/joomla-dev",mount_tag=joomla,security_model=none,id=joomla \
@@ -203,7 +203,7 @@ qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-joomla-v3.24-x86
 ```sh
 mkdir -p ~/lamp-dev
 qemu-img create -f qcow2 ~/lamp-db.qcow2 4G             # optional: keeps the database
-qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-lamp-v3.24-x86_64.iso \
+qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-v3.24-lamp-x86_64.iso \
   -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:8080-:80,hostfwd=tcp:127.0.0.1:2222-:22 \
   -nic socket,model=virtio-net-pci,mcast=230.0.0.1:1234,localaddr=127.0.0.1 \
   -virtfs local,path="$HOME/lamp-dev",mount_tag=www,security_model=none,id=www \
@@ -224,7 +224,7 @@ the Laravel scheduler and a queue worker. 1 GB of RAM is enough.
 ```sh
 mkdir -p ~/laravel-dev
 qemu-img create -f qcow2 ~/laravel-db.qcow2 4G             # optional: keeps the database
-qemu-system-x86_64 -enable-kvm -m 1024 -smp 2 -cdrom iso/alpine-laravel-v3.24-x86_64.iso \
+qemu-system-x86_64 -enable-kvm -m 1024 -smp 2 -cdrom iso/alpine-v3.24-laravel-x86_64.iso \
   -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:8080-:80,hostfwd=tcp:127.0.0.1:3307-:3306,hostfwd=tcp:127.0.0.1:2222-:22 \
   -nic socket,model=virtio-net-pci,mcast=230.0.0.1:1234,localaddr=127.0.0.1 \
   -virtfs local,path="$HOME/laravel-dev",mount_tag=www,security_model=none,id=www \
@@ -259,7 +259,7 @@ qemu-system-x86_64 -enable-kvm -m 1024 -smp 2 -cdrom iso/alpine-laravel-v3.24-x8
 ```sh
 mkdir -p ~/node-dev
 qemu-img create -f qcow2 ~/node-db.qcow2 4G             # optional: keeps the database
-qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-node-v3.24-x86_64.iso \
+qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-v3.24-node-x86_64.iso \
   -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:8080-:3000,hostfwd=tcp:127.0.0.1:2222-:22 \
   -nic socket,model=virtio-net-pci,mcast=230.0.0.1:1234,localaddr=127.0.0.1 \
   -virtfs local,path="$HOME/node-dev",mount_tag=www,security_model=none,id=www \
@@ -289,7 +289,7 @@ qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-node-v3.24-x86_6
 ```sh
 mkdir -p ~/prometheus-dev
 qemu-img create -f qcow2 ~/prometheus-data.qcow2 4G     # optional: keeps the data
-qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-prometheus-v3.24-x86_64.iso \
+qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-v3.24-prometheus-x86_64.iso \
   -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:3000-:3000,hostfwd=tcp:127.0.0.1:9090-:9090,hostfwd=tcp:127.0.0.1:2222-:22 \
   -nic socket,model=virtio-net-pci,mcast=230.0.0.1:1234,localaddr=127.0.0.1 \
   -virtfs local,path="$HOME/prometheus-dev",mount_tag=prometheus,security_model=none,id=prometheus \
@@ -313,7 +313,7 @@ qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-prometheus-v3.24
 ```sh
 mkdir -p ~/wordpress-dev
 qemu-img create -f qcow2 ~/wordpress-db.qcow2 4G        # optional: keeps the database
-qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-wordpress-v3.24-x86_64.iso \
+qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-v3.24-wordpress-x86_64.iso \
   -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:8080-:80,hostfwd=tcp:127.0.0.1:2222-:22 \
   -nic socket,model=virtio-net-pci,mcast=230.0.0.1:1234,localaddr=127.0.0.1 \
   -virtfs local,path="$HOME/wordpress-dev",mount_tag=wordpress,security_model=none,id=wordpress \
@@ -331,7 +331,7 @@ qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-wordpress-v3.24-
 
 ```sh
 mkdir -p ~/x11-home
-qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-x11-v3.24-x86_64.iso \
+qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-v3.24-x11-x86_64.iso \
   -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:5900-:5900,hostfwd=tcp:127.0.0.1:6080-:6080,hostfwd=tcp:127.0.0.1:2222-:22 \
   -nic socket,model=virtio-net-pci,mcast=230.0.0.1:1234,localaddr=127.0.0.1 \
   -virtfs local,path="$HOME/x11-home",mount_tag=home,security_model=none,id=home
@@ -352,7 +352,7 @@ qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-x11-v3.24-x86_64
 ```sh
 mkdir -p ~/zabbix-dev
 qemu-img create -f qcow2 ~/zabbix-data.qcow2 8G         # optional: keeps the data
-qemu-system-x86_64 -enable-kvm -m 3072 -smp 2 -cdrom iso/alpine-zabbix-v3.24-x86_64.iso \
+qemu-system-x86_64 -enable-kvm -m 3072 -smp 2 -cdrom iso/alpine-v3.24-zabbix-x86_64.iso \
   -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:8080-:80,hostfwd=tcp:127.0.0.1:3000-:3000,hostfwd=tcp:127.0.0.1:2222-:22 \
   -nic socket,model=virtio-net-pci,mcast=230.0.0.1:1234,localaddr=127.0.0.1 \
   -virtfs local,path="$HOME/zabbix-dev",mount_tag=zabbix,security_model=none,id=zabbix \

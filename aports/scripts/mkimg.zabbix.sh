@@ -39,4 +39,6 @@ profile_zabbix() {
         zabbix-agent2-openrc
     "
     apkovl="aports/scripts/genapkovl-zabbix.sh"
+    # alpine-<release>-<profile>-<arch>.iso, e.g. alpine-v3.24-zabbix-x86_64.iso
+    output_filename="alpine-${RELEASE}-${PROFILE}-${ARCH}.${image_ext}"
 }

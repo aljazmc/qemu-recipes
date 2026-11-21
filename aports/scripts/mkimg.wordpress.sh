@@ -51,4 +51,6 @@ profile_wordpress() {
         zabbix-agent2-openrc
     "
     apkovl="aports/scripts/genapkovl-wordpress.sh"
+    # alpine-<release>-<profile>-<arch>.iso, e.g. alpine-v3.24-wordpress-x86_64.iso
+    output_filename="alpine-${RELEASE}-${PROFILE}-${ARCH}.${image_ext}"
 }

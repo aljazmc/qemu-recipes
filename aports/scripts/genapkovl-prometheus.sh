@@ -14,7 +14,7 @@
 #   mkdir -p ~/prometheus-dev
 #   qemu-img create -f qcow2 ~/prometheus-data.qcow2 4G   # optional, keeps the data
 #   qemu-system-x86_64 -enable-kvm -m 1024 -smp 2 \
-#       -cdrom iso/alpine-prometheus-v3.24-x86_64.iso \
+#       -cdrom iso/alpine-v3.24-prometheus-x86_64.iso \
 #       -nic user,model=virtio-net-pci,hostfwd=tcp::3000-:3000,hostfwd=tcp::9090-:9090,hostfwd=tcp::2222-:22 \
 #       -nic socket,model=virtio-net-pci,mcast=230.0.0.1:1234,localaddr=127.0.0.1 \
 #       -virtfs local,path="$HOME/prometheus-dev",mount_tag=prometheus,security_model=none,id=prometheus \

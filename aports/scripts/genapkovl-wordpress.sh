@@ -12,7 +12,7 @@
 #   mkdir -p ~/wordpress-dev ~/wordpress-db
 #   qemu-img create -f qcow2 ~/wordpress-db/db.qcow2 4G     # optional, keeps the DB
 #   qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 \
-#       -cdrom iso/alpine-wordpress-v3.24-x86_64.iso \
+#       -cdrom iso/alpine-v3.24-wordpress-x86_64.iso \
 #       -nic user,model=virtio-net-pci,hostfwd=tcp::8080-:80,hostfwd=tcp::2222-:22 \
 #       -virtfs local,path="$HOME/wordpress-dev",mount_tag=wordpress,security_model=none,id=wordpress \
 #       -drive file="$HOME/wordpress-db/db.qcow2",if=virtio,format=qcow2

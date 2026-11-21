@@ -12,7 +12,7 @@
 #   mkdir -p ~/joomla-dev
 #   qemu-img create -f qcow2 ~/joomla-db.qcow2 4G     # optional, keeps the DB
 #   qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 \
-#       -cdrom iso/alpine-joomla-v3.24-x86_64.iso \
+#       -cdrom iso/alpine-v3.24-joomla-x86_64.iso \
 #       -nic user,model=virtio-net-pci,hostfwd=tcp::8080-:80,hostfwd=tcp::2222-:22 \
 #       -virtfs local,path="$HOME/joomla-dev",mount_tag=joomla,security_model=none,id=joomla \
 #       -drive file="$HOME/joomla-db.qcow2",if=virtio,format=qcow2
