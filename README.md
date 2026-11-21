@@ -45,6 +45,26 @@ docker compose run --rm spinner "sh aports/scripts/mkimage.sh --tag v3.24 --outd
 
 The result is `iso/alpine-<profile>-v3.24-x86_64.iso`.
 
+### Smoke test
+
+```sh
+tests/smoke-test.sh              # every ISO in iso/
+tests/smoke-test.sh lamp node    # only these profiles
+```
+
+Boots each ISO headless in QEMU with an empty shared directory and a blank
+database disk, then checks that the VM reaches a login prompt, sshd answers,
+the stack serves its page with a working database (the noVNC page and the VNC
+server for `x11`), and the files created in the shared directory belong to
+you. It needs `curl` and takes a few minutes per profile. The exit status is
+non-zero if any profile fails, and the work directory (serial log, shared
+directory, fetched pages) is kept for inspection.
+
+The test uses host ports 18080–18082; set `SMOKE_PORT_BASE` to move them.
+`SMOKE_TIMEOUT` (seconds per check, default 300) and `SMOKE_KEEP=yes` (keep
+the work directory) are also available. A `laravel` image tested offline
+passes with its starter page.
+
 ### Run
 
 Run the commands from the repository root, since the ISO path is relative.
@@ -242,4 +262,4 @@ your own machine.
 
 Removes the cloned `aports` tree (keeping the profile scripts), `iso/` and
 build leftovers. It deletes the contents of every top-level directory of this
-repository, so don't keep a shared directory inside it.
+repository except `tests/`, so don't keep a shared directory inside it.

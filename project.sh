@@ -8,6 +8,7 @@ find . -mindepth 2 -maxdepth 2 \
     | sed "
         /aports\/scripts/d;
         /\.\/\.git/d;
+        /\.\/tests/d;
     " \
     | xargs -I {} rm -rf {}
 
