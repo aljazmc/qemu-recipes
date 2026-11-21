@@ -14,11 +14,17 @@ find . -mindepth 2 -maxdepth 2 \
 
 find aports/scripts -mindepth 1 -maxdepth 1 \
     | sed "
+        /aports\/scripts\/genapkovl-django.sh/d;
+        /aports\/scripts\/genapkovl-drupal.sh/d;
+        /aports\/scripts\/genapkovl-joomla.sh/d;
         /aports\/scripts\/genapkovl-lamp.sh/d;
         /aports\/scripts\/genapkovl-laravel.sh/d;
         /aports\/scripts\/genapkovl-node.sh/d;
         /aports\/scripts\/genapkovl-wordpress.sh/d;
         /aports\/scripts\/genapkovl-x11.sh/d;
+        /aports\/scripts\/mkimg.django.sh/d;
+        /aports\/scripts\/mkimg.drupal.sh/d;
+        /aports\/scripts\/mkimg.joomla.sh/d;
         /aports\/scripts\/mkimg.lamp.sh/d;
         /aports\/scripts\/mkimg.laravel.sh/d;
         /aports\/scripts\/mkimg.node.sh/d;

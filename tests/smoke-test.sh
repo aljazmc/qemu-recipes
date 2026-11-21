@@ -26,7 +26,7 @@ set -u
 
 cd "$(dirname "$0")/.." || exit 1
 
-PROFILES="lamp laravel node wordpress x11"
+PROFILES="django drupal joomla lamp laravel node wordpress x11"
 PORT_BASE=${SMOKE_PORT_BASE:-18080}
 HTTP_PORT=$PORT_BASE
 SSH_PORT=$((PORT_BASE + 1))
@@ -110,6 +110,22 @@ page() {
 
 # share_owned: the shared directory is not empty and everything in it
 # belongs to the host user
+# django_login PORT USER PASSWORD: the Django admin login works (needs the
+# database and the admin user)
+django_login() {
+	local jar="$WORK/cookies" token code
+	rm -f "$jar"
+	token=$(curl -s -c "$jar" --max-time 10 "http://127.0.0.1:$1/admin/login/" \
+		| sed -n 's/.*name="csrfmiddlewaretoken" value="\([^"]*\)".*/\1/p') || return 1
+	[ -n "$token" ] || return 1
+	code=$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' -b "$jar" --max-time 10 \
+		-H "Referer: http://127.0.0.1:$1/admin/login/" \
+		--data-urlencode "csrfmiddlewaretoken=$token" \
+		--data-urlencode "username=$2" --data-urlencode "password=$3" \
+		"http://127.0.0.1:$1/admin/login/?next=/admin/") || return 1
+	[ "$code" = "302 http://127.0.0.1:$1/admin/" ]
+}
+
 share_owned() {
 	[ -n "$(ls -A "$WORK/share")" ] || return 1
 	[ -z "$(find "$WORK/share" ! -user "$(id -u)" -print -quit)" ]
@@ -138,6 +154,9 @@ test_profile() {
 
 	case $profile in
 		laravel) mem=1024; tag=www ;;
+		django) guest_http=8000; tag=www ;;
+		drupal) tag=drupal ;;
+		joomla) tag=joomla ;;
 		node) guest_http=3000; tag=www ;;
 		wordpress) tag=wordpress ;;
 		x11) guest_http=6080; tag=home ;;
@@ -166,6 +185,24 @@ test_profile() {
 
 	if [ $ok = 0 ]; then
 		case $profile in
+		django)
+			wait_for "runserver serves the new project" \
+				page "$HTTP_PORT" / 'The install worked successfully' || ok=1
+			wait_for "admin login works (PostgreSQL, admin user)" \
+				django_login "$HTTP_PORT" admin admin || ok=1
+			;;
+		drupal)
+			wait_for "Drupal front page renders (database works)" \
+				page "$HTTP_PORT" / '<title>[^<]*Drupal Dev' || ok=1
+			wait_for "Drupal login page (clean URLs)" \
+				page "$HTTP_PORT" /user/login 'id="edit-name"' || ok=1
+			;;
+		joomla)
+			wait_for "Joomla front page renders (database works)" \
+				page "$HTTP_PORT" / 'Joomla Dev' || ok=1
+			wait_for "Joomla administrator login page" \
+				page "$HTTP_PORT" /administrator/ 'mod-login-username' || ok=1
+			;;
 		lamp)
 			wait_for "Apache + PHP serve the starter page, MariaDB connected" \
 				page "$HTTP_PORT" / 'connected, server [0-9.]+-MariaDB' || ok=1

@@ -9,6 +9,9 @@ you can edit files on the host and see the result in the VM right away.
 
 | Profile     | What boots                                    | Shared host dir is | Open on the host                          |
 |-------------|-----------------------------------------------|--------------------|-------------------------------------------|
+| `django`    | Django 5.2 (runserver), PostgreSQL 18         | `/var/www/html`    | <http://localhost:8080>                   |
+| `drupal`    | Apache, PHP 8.4, MariaDB, installed Drupal    | `/var/www/html`    | <http://localhost:8080>                   |
+| `joomla`    | Apache, PHP 8.4, MariaDB, installed Joomla    | `/var/www/html`    | <http://localhost:8080>                   |
 | `lamp`      | Apache, PHP 8.4, MariaDB                      | `/var/www/html`    | <http://localhost:8080>                   |
 | `laravel`   | lighttpd, PHP 8.5 (FPM), MariaDB, Composer    | `/var/www/html`    | <http://localhost:8080>                   |
 | `node`      | Node.js 24, PostgreSQL 18                     | `/var/www/html`    | <http://localhost:8080>                   |
@@ -79,6 +82,82 @@ port 2222. Keep the shared directories **outside** this repository (see
 - If the VM window shows `Nothing to boot`, the firmware found nothing
   bootable and fell back to network boot. That usually means the ISO wasn't
   attached as a CD: check that the `-cdrom` path points to the built ISO.
+
+#### django
+
+```sh
+mkdir -p ~/django-dev
+qemu-img create -f qcow2 ~/django-db.qcow2 4G           # optional: keeps the database
+qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-django-v3.24-x86_64.iso \
+  -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:8080-:8000,hostfwd=tcp:127.0.0.1:2222-:22 \
+  -virtfs local,path="$HOME/django-dev",mount_tag=www,security_model=none,id=www \
+  -drive file="$HOME/django-db.qcow2",if=virtio,format=qcow2
+```
+
+- An empty shared directory gets a new project (`django-admin startproject
+  mysite`) set up for PostgreSQL. Django 5.2 comes from Alpine, so this works
+  offline. Existing files are never touched.
+- The project runs with `manage.py runserver` on port 8000 in the guest,
+  which reloads by itself when a Python file changes. On every start
+  `manage.py migrate` runs and the admin user is created if it's missing:
+  log in at `/admin` as `admin` / `admin`.
+- With a `requirements.txt`, its packages are installed with pip (needs
+  internet) into a virtualenv in the guest that also sees Alpine's Django and
+  psycopg. After changing it, run `rc-service django-app restart` in the VM.
+- The app gets `DATABASE_URL`, `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER` and
+  `PGPASSWORD` in its environment; the new project's `settings.py` reads
+  them. Database `app`, user `app`, password `app`. The user may create
+  databases, so `manage.py test` works.
+- App output: `/var/log/django-app.log` in the guest.
+
+#### drupal
+
+```sh
+mkdir -p ~/drupal-dev
+qemu-img create -f qcow2 ~/drupal-db.qcow2 4G           # optional: keeps the database
+qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-drupal-v3.24-x86_64.iso \
+  -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:8080-:80,hostfwd=tcp:127.0.0.1:2222-:22 \
+  -virtfs local,path="$HOME/drupal-dev",mount_tag=drupal,security_model=none,id=drupal \
+  -drive file="$HOME/drupal-db.qcow2",if=virtio,format=qcow2
+```
+
+- An empty shared directory gets Drupal core and a `settings.php` on first
+  boot, and the site is installed (standard profile). Drupal is bundled in
+  the image, so the first boot works offline.
+- The site is installed already: log in at `/user/login` as `admin` /
+  `admin`.
+- A directory that already holds a Drupal site is served as it is: the
+  tarball layout, or a Composer project (`drupal/recommended-project`)
+  served from `web/`. Any other non-empty directory is served unchanged.
+- The installer runs again whenever the database is empty, but only if
+  `settings.php` is the one the VM wrote (it has a `qemu-recipes: managed`
+  line). Without a database disk, that means a fresh site on every boot.
+- Errors are shown on the page, CSS/JS aggregation is off, and
+  `sites/default` stays writable so you can edit `settings.php` from the
+  host. Composer and Drush aren't included.
+
+#### joomla
+
+```sh
+mkdir -p ~/joomla-dev
+qemu-img create -f qcow2 ~/joomla-db.qcow2 4G           # optional: keeps the database
+qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-joomla-v3.24-x86_64.iso \
+  -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:8080-:80,hostfwd=tcp:127.0.0.1:2222-:22 \
+  -virtfs local,path="$HOME/joomla-dev",mount_tag=joomla,security_model=none,id=joomla \
+  -drive file="$HOME/joomla-db.qcow2",if=virtio,format=qcow2
+```
+
+- An empty shared directory gets Joomla on first boot, and the site is
+  installed with Joomla's CLI installer. Joomla is bundled in the image, so
+  the first boot works offline. A non-empty directory is served as it is.
+- The site is installed already: log in at `/administrator` as `admin` /
+  `admin-password` (Joomla requires at least 12 characters).
+- Search-engine-friendly URLs with `.htaccess` rewriting are on, and error
+  reporting is set to maximum.
+- The installer runs again whenever the database is empty and
+  `configuration.php` points at the VM's database (`joomla`), keeping your
+  `configuration.php`. Without a database disk, that means a fresh site on
+  every boot.
 
 #### lamp
 
@@ -203,12 +282,13 @@ qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-x11-v3.24-x86_64
 ### How sharing and persistence work
 
 - **Permissions.** The service in the VM (Apache, PHP-FPM, the Node app,
-  the X session) runs with the uid/gid that owns the shared directory on the host,
+  Django's runserver, the X session) runs with the uid/gid that owns the shared directory on the host,
   so files created on either side stay editable on both. This relies on
   `security_model=none` in `-virtfs`.
 - **Without `-virtfs`** the shared directory lives in the VM's RAM instead.
 - **Database disk.** On first boot the first blank virtio disk is formatted
-  (ext4, labelled `wpdb`, `lampdb`, `laraveldb` or `nodedb`) and used for the database
+  (ext4, labelled `djangodb`, `drupaldb`, `joomladb`, `lampdb`, `laraveldb`,
+  `nodedb` or `wpdb`) and used for the database
   from then on. Without it the database lives in RAM. Either way, anything
   kept in RAM is lost on poweroff.
 - **SSH.** Put your public key into `~/.ssh/authorized_keys` of the x11 shared
@@ -232,6 +312,25 @@ They end up in `/etc/conf.d/<profile>` in the guest.
 
 | Profile     | Variable              | Default                  |
 |-------------|-----------------------|--------------------------|
+| `django`    | `DB_NAME`, `DB_USER`, `DB_PASSWORD` | `app`      |
+|             | `APP_PORT`            | `8000`                   |
+|             | `DJANGO_PROJECT`      | `mysite`                 |
+|             | `DJANGO_ADMIN_USER`   | `admin` (empty: none)    |
+|             | `DJANGO_ADMIN_PASSWORD` | `admin`                |
+|             | `DJANGO_ADMIN_EMAIL`  | `admin@example.com`      |
+| `drupal`    | `DRUPAL_SITE_NAME`    | `Drupal Dev`             |
+|             | `DRUPAL_ADMIN_USER`   | `admin`                  |
+|             | `DRUPAL_ADMIN_PASSWORD` | `admin`                |
+|             | `DRUPAL_ADMIN_EMAIL`  | `admin@example.com`      |
+|             | `DRUPAL_PROFILE`      | `standard`               |
+|             | `DRUPAL_VERSION`      | `latest`                 |
+|             | `DRUPAL_TARBALL`      | (download)               |
+| `joomla`    | `JOOMLA_SITE_NAME`    | `Joomla Dev`             |
+|             | `JOOMLA_ADMIN_USER`   | `admin`                  |
+|             | `JOOMLA_ADMIN_PASSWORD` | `admin-password` (12+ characters) |
+|             | `JOOMLA_ADMIN_EMAIL`  | `admin@example.com`      |
+|             | `JOOMLA_VERSION`      | `latest`                 |
+|             | `JOOMLA_TARBALL`      | (download)               |
 | `lamp`      | `DB_NAME`, `DB_USER`, `DB_PASSWORD` | `app`      |
 | `laravel`   | `DB_NAME`, `DB_USER`, `DB_PASSWORD` | `app`      |
 |             | `APP_URL`             | `http://localhost:8080`  |
