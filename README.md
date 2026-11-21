@@ -2,7 +2,7 @@
 
 ## QEMU recipes for custom Alpine Linux images
 
-Ready-to-boot Alpine Linux (edge, x86_64) ISO images for QEMU development VMs.
+Ready-to-boot Alpine Linux (3.24 stable, x86_64) ISO images for QEMU development VMs.
 Each image starts its stack on boot with no installation or configuration
 inside the guest, and shares a host directory with the VM over virtio-9p, so
 you can edit files on the host and see the result in the VM right away.
@@ -37,13 +37,13 @@ This clones `aports` on first run and builds the profile named in the
 another profile, run the same command with a different `--profile`:
 
 ```sh
-docker compose run --rm spinner "sh aports/scripts/mkimage.sh --tag edge --outdir iso --arch x86_64 \
-  --repository https://dl-cdn.alpinelinux.org/alpine/edge/main \
-  --repository https://dl-cdn.alpinelinux.org/alpine/edge/community \
+docker compose run --rm spinner "sh aports/scripts/mkimage.sh --tag v3.24 --outdir iso --arch x86_64 \
+  --repository https://dl-cdn.alpinelinux.org/alpine/v3.24/main \
+  --repository https://dl-cdn.alpinelinux.org/alpine/v3.24/community \
   --profile wordpress"
 ```
 
-The result is `iso/alpine-<profile>-edge-x86_64.iso`.
+The result is `iso/alpine-<profile>-v3.24-x86_64.iso`.
 
 ### Run
 
@@ -65,7 +65,7 @@ port 2222. Keep the shared directories **outside** this repository (see
 ```sh
 mkdir -p ~/lamp-dev
 qemu-img create -f qcow2 ~/lamp-db.qcow2 4G             # optional: keeps the database
-qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-lamp-edge-x86_64.iso \
+qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-lamp-v3.24-x86_64.iso \
   -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:8080-:80,hostfwd=tcp:127.0.0.1:2222-:22 \
   -virtfs local,path="$HOME/lamp-dev",mount_tag=www,security_model=none,id=www \
   -drive file="$HOME/lamp-db.qcow2",if=virtio,format=qcow2
@@ -85,7 +85,7 @@ the Laravel scheduler and a queue worker. 1 GB of RAM is enough.
 ```sh
 mkdir -p ~/laravel-dev
 qemu-img create -f qcow2 ~/laravel-db.qcow2 4G             # optional: keeps the database
-qemu-system-x86_64 -enable-kvm -m 1024 -smp 2 -cdrom iso/alpine-laravel-edge-x86_64.iso \
+qemu-system-x86_64 -enable-kvm -m 1024 -smp 2 -cdrom iso/alpine-laravel-v3.24-x86_64.iso \
   -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:8080-:80,hostfwd=tcp:127.0.0.1:3307-:3306,hostfwd=tcp:127.0.0.1:2222-:22 \
   -virtfs local,path="$HOME/laravel-dev",mount_tag=www,security_model=none,id=www \
   -drive file="$HOME/laravel-db.qcow2",if=virtio,format=qcow2
@@ -119,7 +119,7 @@ qemu-system-x86_64 -enable-kvm -m 1024 -smp 2 -cdrom iso/alpine-laravel-edge-x86
 ```sh
 mkdir -p ~/node-dev
 qemu-img create -f qcow2 ~/node-db.qcow2 4G             # optional: keeps the database
-qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-node-edge-x86_64.iso \
+qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-node-v3.24-x86_64.iso \
   -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:8080-:3000,hostfwd=tcp:127.0.0.1:2222-:22 \
   -virtfs local,path="$HOME/node-dev",mount_tag=www,security_model=none,id=www \
   -drive file="$HOME/node-db.qcow2",if=virtio,format=qcow2
@@ -148,7 +148,7 @@ qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-node-edge-x86_64
 ```sh
 mkdir -p ~/wordpress-dev
 qemu-img create -f qcow2 ~/wordpress-db.qcow2 4G        # optional: keeps the database
-qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-wordpress-edge-x86_64.iso \
+qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-wordpress-v3.24-x86_64.iso \
   -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:8080-:80,hostfwd=tcp:127.0.0.1:2222-:22 \
   -virtfs local,path="$HOME/wordpress-dev",mount_tag=wordpress,security_model=none,id=wordpress \
   -drive file="$HOME/wordpress-db.qcow2",if=virtio,format=qcow2
@@ -165,7 +165,7 @@ qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-wordpress-edge-x
 
 ```sh
 mkdir -p ~/x11-home
-qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-x11-edge-x86_64.iso \
+qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-x11-v3.24-x86_64.iso \
   -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:5900-:5900,hostfwd=tcp:127.0.0.1:6080-:6080,hostfwd=tcp:127.0.0.1:2222-:22 \
   -virtfs local,path="$HOME/x11-home",mount_tag=home,security_model=none,id=home
 ```
@@ -202,9 +202,9 @@ placed before the service name:
 
 ```sh
 docker compose run --rm -e LARAVEL_CREATE=no -e DB_PASSWORD=secret spinner \
-  "sh aports/scripts/mkimage.sh --tag edge --outdir iso --arch x86_64 \
-  --repository https://dl-cdn.alpinelinux.org/alpine/edge/main \
-  --repository https://dl-cdn.alpinelinux.org/alpine/edge/community \
+  "sh aports/scripts/mkimage.sh --tag v3.24 --outdir iso --arch x86_64 \
+  --repository https://dl-cdn.alpinelinux.org/alpine/v3.24/main \
+  --repository https://dl-cdn.alpinelinux.org/alpine/v3.24/community \
   --profile laravel"
 ```
 

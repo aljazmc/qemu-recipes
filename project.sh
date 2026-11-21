@@ -1,5 +1,7 @@
 #!/bin/sh
 
+ALPINE_VERSION=3.24
+
 clean() {
 
 find . -mindepth 2 -maxdepth 2 \
@@ -34,11 +36,11 @@ start() {
 
 if [ ! -d aports/main ]; then
 
-    docker compose run --rm spinner
+    docker compose run --rm spinner "git clone --depth=1 --branch ${ALPINE_VERSION}-stable https://gitlab.alpinelinux.org/alpine/aports.git /tmp/aports && rsync -auq /tmp/aports/ aports/ && docker-entrypoint.sh"
 
 fi
 
-docker compose run --rm spinner "sh aports/scripts/mkimage.sh --tag edge --outdir iso --arch x86_64 --repository https://dl-cdn.alpinelinux.org/alpine/edge/main --repository https://dl-cdn.alpinelinux.org/alpine/edge/community --profile laravel"
+docker compose run --rm spinner "sh aports/scripts/mkimage.sh --tag v${ALPINE_VERSION} --outdir iso --arch x86_64 --repository https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_VERSION}/main --repository https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_VERSION}/community --profile laravel"
 
 }
 

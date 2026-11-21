@@ -13,7 +13,7 @@
 #   mkdir -p ~/laravel-dev
 #   qemu-img create -f qcow2 ~/laravel-db.qcow2 4G     # optional, keeps the DB
 #   qemu-system-x86_64 -enable-kvm -m 1024 -smp 2 \
-#       -cdrom iso/alpine-laravel-edge-x86_64.iso \
+#       -cdrom iso/alpine-laravel-v3.24-x86_64.iso \
 #       -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:8080-:80,hostfwd=tcp:127.0.0.1:3307-:3306,hostfwd=tcp:127.0.0.1:2222-:22 \
 #       -virtfs local,path="$HOME/laravel-dev",mount_tag=www,security_model=none,id=www \
 #       -drive file="$HOME/laravel-db.qcow2",if=virtio,format=qcow2
