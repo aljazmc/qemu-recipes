@@ -6,21 +6,28 @@ Ready-to-boot Alpine Linux (3.24 stable, x86_64) ISO images for QEMU development
 Each image starts its stack on boot with no installation or configuration
 inside the guest, and shares a host directory with the VM over virtio-9p, so
 you can edit files on the host and see the result in the VM right away.
+The `prometheus`, `zabbix` and `grafana` VMs find the other VMs on a shared
+[monitoring network](#monitoring-network) and monitor them on their own.
 
 | Profile     | What boots                                    | Shared host dir is | Open on the host                          |
 |-------------|-----------------------------------------------|--------------------|-------------------------------------------|
 | `django`    | Django 5.2 (runserver), PostgreSQL 18         | `/var/www/html`    | <http://localhost:8080>                   |
 | `drupal`    | Apache, PHP 8.4, MariaDB, installed Drupal    | `/var/www/html`    | <http://localhost:8080>                   |
+| `grafana`   | Grafana, every prometheus/zabbix VM found as a data source | `/srv/grafana` | <http://localhost:3000> |
 | `joomla`    | Apache, PHP 8.4, MariaDB, installed Joomla    | `/var/www/html`    | <http://localhost:8080>                   |
 | `lamp`      | Apache, PHP 8.4, MariaDB                      | `/var/www/html`    | <http://localhost:8080>                   |
 | `laravel`   | lighttpd, PHP 8.5 (FPM), MariaDB, Composer    | `/var/www/html`    | <http://localhost:8080>                   |
 | `node`      | Node.js 24, PostgreSQL 18                     | `/var/www/html`    | <http://localhost:8080>                   |
+| `prometheus` | Prometheus scraping every VM found, Grafana | `/srv/prometheus` | <http://localhost:3000> (Grafana), <http://localhost:9090> |
 | `wordpress` | Apache, PHP 8.4, MariaDB, installed WordPress | `/var/www/html`    | <http://localhost:8080>                   |
 | `x11`       | X11 desktop (openbox) over VNC / noVNC        | `/home/alpine`     | <http://localhost:6080/vnc.html?autoconnect=1&resize=remote> or `vncviewer localhost:5900` |
+| `zabbix`    | Zabbix monitoring every VM found, Grafana     | `/srv/zabbix`      | <http://localhost:8080> (Zabbix), <http://localhost:3000> (Grafana) |
 
 Each profile is a pair of scripts in `aports/scripts/`: `mkimg.<profile>.sh`
 lists the packages put on the ISO, and `genapkovl-<profile>.sh` generates the
-boot overlay (config, services) that sets everything up.
+boot overlay (config, services) that sets everything up. All profiles share
+`monitoring-agent.sh` (monitoring network, agents); the monitoring profiles
+also share `monitoring-grafana.sh` (Grafana setup and dashboards).
 
 ### Requirements
 
@@ -56,14 +63,19 @@ tests/smoke-test.sh lamp node    # only these profiles
 ```
 
 Boots each ISO headless in QEMU with an empty shared directory and a blank
-database disk, then checks that the VM reaches a login prompt, sshd answers,
-the stack serves its page with a working database (the noVNC page and the VNC
-server for `x11`), and the files created in the shared directory belong to
-you. It needs `curl` and takes a few minutes per profile. The exit status is
+database disk, then checks that the VM reaches a login prompt, sshd and
+node_exporter answer, the stack serves its page with a working database (the
+noVNC page and the VNC server for `x11`), and the files created in the shared
+directory belong to you. The monitoring profiles get companion VMs on a
+monitoring network of the test's own and must monitor them: a `node` VM for
+`prometheus` and `zabbix` (scraped, agent available in Zabbix), and a
+`prometheus` and a `zabbix` VM for `grafana` (working data sources), so build
+those ISOs too. It needs `curl` and takes a few minutes per profile. The exit status is
 non-zero if any profile fails, and the work directory (serial log, shared
 directory, fetched pages) is kept for inspection.
 
-The test uses host ports 18080–18082; set `SMOKE_PORT_BASE` to move them.
+The test uses host ports 18080–18084 and the multicast group
+`230.0.0.1:19080`; set `SMOKE_PORT_BASE` (and `SMOKE_MCAST`) to move them.
 `SMOKE_TIMEOUT` (seconds per check, default 300) and `SMOKE_KEEP=yes` (keep
 the work directory) are also available. A `laravel` image tested offline
 passes with its starter page.
@@ -90,6 +102,7 @@ mkdir -p ~/django-dev
 qemu-img create -f qcow2 ~/django-db.qcow2 4G           # optional: keeps the database
 qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-django-v3.24-x86_64.iso \
   -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:8080-:8000,hostfwd=tcp:127.0.0.1:2222-:22 \
+  -nic socket,model=virtio-net-pci,mcast=230.0.0.1:1234,localaddr=127.0.0.1 \
   -virtfs local,path="$HOME/django-dev",mount_tag=www,security_model=none,id=www \
   -drive file="$HOME/django-db.qcow2",if=virtio,format=qcow2
 ```
@@ -117,6 +130,7 @@ mkdir -p ~/drupal-dev
 qemu-img create -f qcow2 ~/drupal-db.qcow2 4G           # optional: keeps the database
 qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-drupal-v3.24-x86_64.iso \
   -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:8080-:80,hostfwd=tcp:127.0.0.1:2222-:22 \
+  -nic socket,model=virtio-net-pci,mcast=230.0.0.1:1234,localaddr=127.0.0.1 \
   -virtfs local,path="$HOME/drupal-dev",mount_tag=drupal,security_model=none,id=drupal \
   -drive file="$HOME/drupal-db.qcow2",if=virtio,format=qcow2
 ```
@@ -136,6 +150,30 @@ qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-drupal-v3.24-x86
   `sites/default` stays writable so you can edit `settings.php` from the
   host. Composer and Drush aren't included.
 
+#### grafana
+
+```sh
+mkdir -p ~/grafana-dev
+qemu-img create -f qcow2 ~/grafana-data.qcow2 2G        # optional: keeps the data
+qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-grafana-v3.24-x86_64.iso \
+  -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:3000-:3000,hostfwd=tcp:127.0.0.1:2222-:22 \
+  -nic socket,model=virtio-net-pci,mcast=230.0.0.1:1234,localaddr=127.0.0.1 \
+  -virtfs local,path="$HOME/grafana-dev",mount_tag=grafana,security_model=none,id=grafana \
+  -drive file="$HOME/grafana-data.qcow2",if=virtio,format=qcow2
+```
+
+- Every `prometheus` and `zabbix` VM on the monitoring network becomes a data
+  source, "Prometheus on <vm>" or "Zabbix on <vm>", within about 10 seconds
+  of showing up. A data source stays when its VM goes away, and follows the
+  VM when its address changes.
+- Log in as `admin` / `admin`. The dashboards "VMs (Prometheus)" and
+  "VMs (Zabbix)" (folder qemu-recipes) let you pick the data source.
+- JSON files in `dashboards/` of the shared directory appear in the folder
+  "Shared" and are re-read every 10 seconds, so you can edit dashboards on
+  the host.
+- The Zabbix plugin is bundled in the image. Discovered Zabbix VMs are
+  queried as `Admin` / `zabbix` (see [Build-time settings](#build-time-settings)).
+
 #### joomla
 
 ```sh
@@ -143,6 +181,7 @@ mkdir -p ~/joomla-dev
 qemu-img create -f qcow2 ~/joomla-db.qcow2 4G           # optional: keeps the database
 qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-joomla-v3.24-x86_64.iso \
   -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:8080-:80,hostfwd=tcp:127.0.0.1:2222-:22 \
+  -nic socket,model=virtio-net-pci,mcast=230.0.0.1:1234,localaddr=127.0.0.1 \
   -virtfs local,path="$HOME/joomla-dev",mount_tag=joomla,security_model=none,id=joomla \
   -drive file="$HOME/joomla-db.qcow2",if=virtio,format=qcow2
 ```
@@ -166,6 +205,7 @@ mkdir -p ~/lamp-dev
 qemu-img create -f qcow2 ~/lamp-db.qcow2 4G             # optional: keeps the database
 qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-lamp-v3.24-x86_64.iso \
   -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:8080-:80,hostfwd=tcp:127.0.0.1:2222-:22 \
+  -nic socket,model=virtio-net-pci,mcast=230.0.0.1:1234,localaddr=127.0.0.1 \
   -virtfs local,path="$HOME/lamp-dev",mount_tag=www,security_model=none,id=www \
   -drive file="$HOME/lamp-db.qcow2",if=virtio,format=qcow2
 ```
@@ -186,6 +226,7 @@ mkdir -p ~/laravel-dev
 qemu-img create -f qcow2 ~/laravel-db.qcow2 4G             # optional: keeps the database
 qemu-system-x86_64 -enable-kvm -m 1024 -smp 2 -cdrom iso/alpine-laravel-v3.24-x86_64.iso \
   -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:8080-:80,hostfwd=tcp:127.0.0.1:3307-:3306,hostfwd=tcp:127.0.0.1:2222-:22 \
+  -nic socket,model=virtio-net-pci,mcast=230.0.0.1:1234,localaddr=127.0.0.1 \
   -virtfs local,path="$HOME/laravel-dev",mount_tag=www,security_model=none,id=www \
   -drive file="$HOME/laravel-db.qcow2",if=virtio,format=qcow2
 ```
@@ -220,6 +261,7 @@ mkdir -p ~/node-dev
 qemu-img create -f qcow2 ~/node-db.qcow2 4G             # optional: keeps the database
 qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-node-v3.24-x86_64.iso \
   -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:8080-:3000,hostfwd=tcp:127.0.0.1:2222-:22 \
+  -nic socket,model=virtio-net-pci,mcast=230.0.0.1:1234,localaddr=127.0.0.1 \
   -virtfs local,path="$HOME/node-dev",mount_tag=www,security_model=none,id=www \
   -drive file="$HOME/node-db.qcow2",if=virtio,format=qcow2
 ```
@@ -242,6 +284,30 @@ qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-node-v3.24-x86_6
   user `app`, password `app`.
 - App output: `/var/log/node-app.log` in the guest.
 
+#### prometheus
+
+```sh
+mkdir -p ~/prometheus-dev
+qemu-img create -f qcow2 ~/prometheus-data.qcow2 4G     # optional: keeps the data
+qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-prometheus-v3.24-x86_64.iso \
+  -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:3000-:3000,hostfwd=tcp:127.0.0.1:9090-:9090,hostfwd=tcp:127.0.0.1:2222-:22 \
+  -nic socket,model=virtio-net-pci,mcast=230.0.0.1:1234,localaddr=127.0.0.1 \
+  -virtfs local,path="$HOME/prometheus-dev",mount_tag=prometheus,security_model=none,id=prometheus \
+  -drive file="$HOME/prometheus-data.qcow2",if=virtio,format=qcow2
+```
+
+- Every VM on the monitoring network is scraped (its node_exporter) as job
+  `node`, labelled `instance` (the VM's name) and `profile`, within about
+  10 seconds of showing up. The prometheus VM itself is in there too.
+- Grafana (`admin` / `admin`) has Prometheus as its default data source and
+  the dashboard "VMs (Prometheus)": CPU, memory, load, root filesystem and
+  network per VM.
+- The shared directory holds `rules/*.yml` (alerting and recording rules,
+  starting with an example `VMDown` alert), `scrape/*.yml` (more scrape
+  configs, for your own exporters) and `dashboards/*.json` (Grafana, folder
+  "Shared"). Prometheus is reloaded within about 10 seconds of a change.
+- Samples are kept for 15 days (`PROMETHEUS_RETENTION`).
+
 #### wordpress
 
 ```sh
@@ -249,6 +315,7 @@ mkdir -p ~/wordpress-dev
 qemu-img create -f qcow2 ~/wordpress-db.qcow2 4G        # optional: keeps the database
 qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-wordpress-v3.24-x86_64.iso \
   -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:8080-:80,hostfwd=tcp:127.0.0.1:2222-:22 \
+  -nic socket,model=virtio-net-pci,mcast=230.0.0.1:1234,localaddr=127.0.0.1 \
   -virtfs local,path="$HOME/wordpress-dev",mount_tag=wordpress,security_model=none,id=wordpress \
   -drive file="$HOME/wordpress-db.qcow2",if=virtio,format=qcow2
 ```
@@ -266,6 +333,7 @@ qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-wordpress-v3.24-
 mkdir -p ~/x11-home
 qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-x11-v3.24-x86_64.iso \
   -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:5900-:5900,hostfwd=tcp:127.0.0.1:6080-:6080,hostfwd=tcp:127.0.0.1:2222-:22 \
+  -nic socket,model=virtio-net-pci,mcast=230.0.0.1:1234,localaddr=127.0.0.1 \
   -virtfs local,path="$HOME/x11-home",mount_tag=home,security_model=none,id=home
 ```
 
@@ -279,6 +347,56 @@ qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-x11-v3.24-x86_64
 - `doas` gives root without a password.
 - There is no sound over VNC, and OpenGL runs on the CPU (llvmpipe).
 
+#### zabbix
+
+```sh
+mkdir -p ~/zabbix-dev
+qemu-img create -f qcow2 ~/zabbix-data.qcow2 8G         # optional: keeps the data
+qemu-system-x86_64 -enable-kvm -m 3072 -smp 2 -cdrom iso/alpine-zabbix-v3.24-x86_64.iso \
+  -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:8080-:80,hostfwd=tcp:127.0.0.1:3000-:3000,hostfwd=tcp:127.0.0.1:2222-:22 \
+  -nic socket,model=virtio-net-pci,mcast=230.0.0.1:1234,localaddr=127.0.0.1 \
+  -virtfs local,path="$HOME/zabbix-dev",mount_tag=zabbix,security_model=none,id=zabbix \
+  -drive file="$HOME/zabbix-data.qcow2",if=virtio,format=qcow2
+```
+
+- Zabbix 7.4 (server and frontend, on PostgreSQL 18). Log in as `Admin` /
+  `zabbix`. On first boot the database is created, which takes about a
+  minute.
+- Every VM on the monitoring network becomes a host within about 30 seconds
+  of showing up: group "qemu-recipes VMs", template "Linux by Zabbix agent"
+  (checked through the VM's zabbix_agent2), tag `profile`. When a VM comes
+  back with another address, its host is updated. The zabbix VM itself is
+  the host "Zabbix server".
+- Grafana (`admin` / `admin`) has the Zabbix plugin, Zabbix as its default
+  data source and the dashboard "VMs (Zabbix)". JSON files in `dashboards/`
+  of the shared directory appear in the folder "Shared".
+- 3 GB of RAM: Zabbix, PostgreSQL, PHP and Grafana all run from RAM.
+
+### Monitoring network
+
+Every VM can join a virtual LAN that all VMs on this host share: the
+`-nic socket,...,mcast=230.0.0.1:1234,localaddr=127.0.0.1` line in the
+examples above. It needs no root and stays on the host (loopback). Without
+that line a VM works as before, it just can't be monitored by the others.
+
+- In the guest that second NIC is `eth1`. It gets a random MAC (QEMU gives
+  every VM the same default one) and an IPv4 link-local address
+  (169.254.x.x), so no DHCP server is needed.
+- Every VM announces itself there over mDNS (avahi) as a
+  `_qemu-recipes._tcp` service, with its profile and the ports of its
+  agents. Two VMs with the same name get unique ones (`node`, `node-2`).
+- Every VM runs node_exporter (port 9100) for Prometheus and zabbix_agent2
+  (port 10050, passive checks from the monitoring network) for Zabbix.
+- The `prometheus`, `zabbix` and `grafana` VMs browse these announcements
+  and set themselves up: start them in any order, and start or stop other
+  VMs whenever you like.
+- `qemu-recipes-peers` in a monitoring VM lists what it sees.
+- To use a real LAN instead, bridge the second NIC to it (for example with
+  `-nic bridge,br=br0,model=virtio-net-pci`): VMs on other hosts then show up
+  too. Link-local addresses and mDNS don't cross routers.
+- Use another group or port (`mcast=230.0.0.1:1235`) for a separate set of
+  VMs.
+
 ### How sharing and persistence work
 
 - **Permissions.** The service in the VM (Apache, PHP-FPM, the Node app,
@@ -287,8 +405,9 @@ qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-x11-v3.24-x86_64
   `security_model=none` in `-virtfs`.
 - **Without `-virtfs`** the shared directory lives in the VM's RAM instead.
 - **Database disk.** On first boot the first blank virtio disk is formatted
-  (ext4, labelled `djangodb`, `drupaldb`, `joomladb`, `lampdb`, `laraveldb`,
-  `nodedb` or `wpdb`) and used for the database
+  (ext4, labelled `djangodb`, `drupaldb`, `grafanadb`, `joomladb`, `lampdb`,
+  `laraveldb`, `nodedb`, `promdb`, `wpdb` or `zabbixdb`) and used for the
+  database (for the monitoring profiles: the collected data and Grafana)
   from then on. Without it the database lives in RAM. Either way, anything
   kept in RAM is lost on poweroff.
 - **SSH.** Put your public key into `~/.ssh/authorized_keys` of the x11 shared
@@ -325,6 +444,10 @@ They end up in `/etc/conf.d/<profile>` in the guest.
 |             | `DRUPAL_PROFILE`      | `standard`               |
 |             | `DRUPAL_VERSION`      | `latest`                 |
 |             | `DRUPAL_TARBALL`      | (download)               |
+| `grafana`   | `GRAFANA_ADMIN_USER`  | `admin`                  |
+|             | `GRAFANA_ADMIN_PASSWORD` | `admin`               |
+|             | `ZABBIX_USER`, `ZABBIX_PASSWORD` | `Admin`, `zabbix` (for discovered Zabbix VMs) |
+|             | `GRAFANA_ZABBIX_PLUGIN_VERSION` | `latest`       |
 | `joomla`    | `JOOMLA_SITE_NAME`    | `Joomla Dev`             |
 |             | `JOOMLA_ADMIN_USER`   | `admin`                  |
 |             | `JOOMLA_ADMIN_PASSWORD` | `admin-password` (12+ characters) |
@@ -339,6 +462,9 @@ They end up in `/etc/conf.d/<profile>` in the guest.
 | `node`      | `DB_NAME`, `DB_USER`, `DB_PASSWORD` | `app`      |
 |             | `APP_PORT`            | `3000`                   |
 |             | `POSTGRES_JS_VERSION` | `latest`                 |
+| `prometheus` | `GRAFANA_ADMIN_USER`, `GRAFANA_ADMIN_PASSWORD` | `admin` |
+|             | `PROMETHEUS_RETENTION` | `15d`                   |
+|             | `SCRAPE_INTERVAL`     | `15s`                    |
 | `wordpress` | `WP_URL`              | `http://localhost:8080`  |
 |             | `WP_TITLE`            | `WordPress Dev`          |
 |             | `WP_ADMIN_USER`       | `admin`                  |
@@ -349,6 +475,9 @@ They end up in `/etc/conf.d/<profile>` in the guest.
 | `x11`       | `X11_USER`            | `alpine`                 |
 |             | `VNC_GEOMETRY`        | `1920x1080`              |
 |             | `VNC_PASSWORD`        | (none)                   |
+| `zabbix`    | `ZABBIX_ADMIN_PASSWORD` | `zabbix`               |
+|             | `GRAFANA_ADMIN_USER`, `GRAFANA_ADMIN_PASSWORD` | `admin` |
+|             | `GRAFANA_ZABBIX_PLUGIN_VERSION` | `latest`       |
 
 The defaults are weak development credentials. Don't expose these VMs beyond
 your own machine.

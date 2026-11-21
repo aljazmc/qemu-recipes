@@ -1,6 +1,8 @@
 profile_x11() {
     profile_virt
     kernel_flavors="virt"
+    # root tmpfs (diskless): up to 75% of RAM instead of 50%, the packages live there
+    kernel_cmdline="$kernel_cmdline rootflags=size=75%"
     title="x11"
     desc="X11 desktop (openbox) served over VNC and noVNC"
     profile_abbrev="x11"
@@ -48,6 +50,12 @@ profile_x11() {
         xrandr
         xsetroot
         xterm
+        avahi
+        avahi-openrc
+        prometheus-node-exporter
+        prometheus-node-exporter-openrc
+        zabbix-agent2
+        zabbix-agent2-openrc
     "
     apkovl="aports/scripts/genapkovl-x11.sh"
 }

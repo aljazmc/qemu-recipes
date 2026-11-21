@@ -77,6 +77,9 @@ rc_add() {
 	ln -sf /etc/init.d/"$1" "$tmp"/etc/runlevels/"$2"/"$1"
 }
 
+# Agents and the monitoring network, shared by all profiles
+. "$(dirname "$0")"/monitoring-agent.sh
+
 mkdir -p "$tmp"/etc
 makefile root:root 0644 "$tmp"/etc/hostname <<EOF
 $HOSTNAME
@@ -487,6 +490,9 @@ else
 	echo "WARNING: could not bundle the postgres npm package, the starter app will npm install it" >&2
 	rm -f "$tmp"/usr/share/node-dev/postgres.tgz
 fi
+
+# --- Monitoring agents (see monitoring-agent.sh) ---------------------------
+monitoring_agent node
 
 # --- Enable services ---------------------------------------------------------
 for svc in devfs dmesg mdev hwdrivers modloop; do

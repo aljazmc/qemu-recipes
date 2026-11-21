@@ -1,6 +1,8 @@
 profile_wordpress() {
     profile_virt
     kernel_flavors="virt"
+    # root tmpfs (diskless): up to 75% of RAM instead of 50%, the packages live there
+    kernel_cmdline="$kernel_cmdline rootflags=size=75%"
     title="WordPress"
     desc="Self-hosted WordPress development server (Apache, PHP 8.4, MariaDB)"
     profile_abbrev="wordpress"
@@ -39,6 +41,14 @@ profile_wordpress() {
         php84-xmlreader
         php84-xmlwriter
         php84-zip
+        avahi
+        avahi-openrc
+        dbus
+        dbus-openrc
+        prometheus-node-exporter
+        prometheus-node-exporter-openrc
+        zabbix-agent2
+        zabbix-agent2-openrc
     "
     apkovl="aports/scripts/genapkovl-wordpress.sh"
 }

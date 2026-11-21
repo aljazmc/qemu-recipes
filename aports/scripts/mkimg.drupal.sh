@@ -1,6 +1,8 @@
 profile_drupal() {
     profile_virt
     kernel_flavors="virt"
+    # root tmpfs (diskless): up to 75% of RAM instead of 50%, the packages live there
+    kernel_cmdline="$kernel_cmdline rootflags=size=75%"
     title="Drupal"
     desc="Self-hosted Drupal development server (Apache, PHP 8.4, MariaDB)"
     profile_abbrev="drupal"
@@ -41,6 +43,14 @@ profile_drupal() {
         php84-xmlwriter
         php84-zip
         php84-zlib
+        avahi
+        avahi-openrc
+        dbus
+        dbus-openrc
+        prometheus-node-exporter
+        prometheus-node-exporter-openrc
+        zabbix-agent2
+        zabbix-agent2-openrc
     "
     apkovl="aports/scripts/genapkovl-drupal.sh"
 }

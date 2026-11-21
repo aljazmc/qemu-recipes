@@ -1,6 +1,8 @@
 profile_django() {
     profile_virt
     kernel_flavors="virt"
+    # root tmpfs (diskless): up to 75% of RAM instead of 50%, the packages live there
+    kernel_cmdline="$kernel_cmdline rootflags=size=75%"
     title="Django"
     desc="Self-hosted Django development server (Django 5.2, PostgreSQL 18)"
     profile_abbrev="django"
@@ -20,6 +22,14 @@ profile_django() {
         py3-psycopg
         python3
         tzdata
+        avahi
+        avahi-openrc
+        dbus
+        dbus-openrc
+        prometheus-node-exporter
+        prometheus-node-exporter-openrc
+        zabbix-agent2
+        zabbix-agent2-openrc
     "
     apkovl="aports/scripts/genapkovl-django.sh"
 }

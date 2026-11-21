@@ -1,6 +1,8 @@
 profile_laravel() {
     profile_virt
     kernel_flavors="virt"
+    # root tmpfs (diskless): up to 75% of RAM instead of 50%, the packages live there
+    kernel_cmdline="$kernel_cmdline rootflags=size=75%"
     title="Laravel"
     desc="Lightweight LAMP-like server for Laravel (lighttpd, PHP 8.5 FPM, MariaDB)"
     profile_abbrev="laravel"
@@ -45,6 +47,14 @@ profile_laravel() {
         php85-xmlwriter
         php85-zip
         sqlite
+        avahi
+        avahi-openrc
+        dbus
+        dbus-openrc
+        prometheus-node-exporter
+        prometheus-node-exporter-openrc
+        zabbix-agent2
+        zabbix-agent2-openrc
     "
     apkovl="aports/scripts/genapkovl-laravel.sh"
 }

@@ -16,20 +16,28 @@ find aports/scripts -mindepth 1 -maxdepth 1 \
     | sed "
         /aports\/scripts\/genapkovl-django.sh/d;
         /aports\/scripts\/genapkovl-drupal.sh/d;
+        /aports\/scripts\/genapkovl-grafana.sh/d;
         /aports\/scripts\/genapkovl-joomla.sh/d;
         /aports\/scripts\/genapkovl-lamp.sh/d;
         /aports\/scripts\/genapkovl-laravel.sh/d;
         /aports\/scripts\/genapkovl-node.sh/d;
+        /aports\/scripts\/genapkovl-prometheus.sh/d;
         /aports\/scripts\/genapkovl-wordpress.sh/d;
         /aports\/scripts\/genapkovl-x11.sh/d;
+        /aports\/scripts\/genapkovl-zabbix.sh/d;
         /aports\/scripts\/mkimg.django.sh/d;
         /aports\/scripts\/mkimg.drupal.sh/d;
+        /aports\/scripts\/mkimg.grafana.sh/d;
         /aports\/scripts\/mkimg.joomla.sh/d;
         /aports\/scripts\/mkimg.lamp.sh/d;
         /aports\/scripts\/mkimg.laravel.sh/d;
         /aports\/scripts\/mkimg.node.sh/d;
+        /aports\/scripts\/mkimg.prometheus.sh/d;
         /aports\/scripts\/mkimg.wordpress.sh/d;
         /aports\/scripts\/mkimg.x11.sh/d;
+        /aports\/scripts\/mkimg.zabbix.sh/d;
+        /aports\/scripts\/monitoring-agent.sh/d;
+        /aports\/scripts\/monitoring-grafana.sh/d;
     " \
     | xargs -I {} rm -rf {}
 
