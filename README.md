@@ -1,6 +1,50 @@
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+# qemu-recipes
 
-## QEMU recipes for custom Alpine Linux images
+[![ShellCheck](https://github.com/aljazmc/qemu-recipes/actions/workflows/shellcheck.yml/badge.svg)](https://github.com/aljazmc/qemu-recipes/actions/workflows/shellcheck.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Alpine Linux 3.24](https://img.shields.io/badge/Alpine%20Linux-3.24-0d597f?logo=alpinelinux&logoColor=white)](https://alpinelinux.org/)
+[![QEMU](https://img.shields.io/badge/QEMU-KVM-ff6600?logo=qemu&logoColor=white)](https://www.qemu.org/)
+[![Profiles](https://img.shields.io/badge/profiles-11-0a7bbb)](#profiles)
+[![Docker](https://img.shields.io/badge/built%20in-aljazmc%2Fimage--spinner-2496ed?logo=docker&logoColor=white)](https://hub.docker.com/r/aljazmc/image-spinner)
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-fe5196?logo=conventionalcommits&logoColor=white)](https://www.conventionalcommits.org/)
+
+Ready-to-boot development VMs as custom Alpine Linux ISOs. Each of the 11
+profiles boots straight into its stack, from Django and Laravel to an X11
+desktop and a monitoring trio of Prometheus, Zabbix and Grafana, with nothing
+to install or configure inside the guest.
+
+## Features
+
+- **Boot and work.** Every ISO starts its stack on boot: web stacks with
+  their database, a desktop over VNC and noVNC, or monitoring.
+- **Edit on the host.** A host directory is shared with the VM over
+  virtio-9p, with services running as the uid that owns it, so files stay
+  editable on both sides.
+- **Persistent data.** The first blank virtio disk is formatted as ext4 on
+  first boot and holds the database from then on.
+- **Monitoring that finds itself.** The `prometheus`, `zabbix` and `grafana`
+  VMs discover the other VMs on a shared network and monitor them on their
+  own.
+- **Tested boots.** `tests/smoke-test.sh` boots every ISO headless and checks
+  the login prompt, SSH, the stack's page with its database and the
+  ownership of shared files.
+- **Built in a container.** The ISOs are built in the
+  [`aljazmc/image-spinner`](https://hub.docker.com/r/aljazmc/image-spinner)
+  image, so the host needs only Docker and QEMU.
+
+## Quick start
+
+```sh
+git clone https://github.com/aljazmc/qemu-recipes.git
+cd qemu-recipes
+./project.sh start
+```
+
+This clones `aports` on first run and builds the profile named in the
+`start()` function of `project.sh` into `iso/`; see [Build](#build) for other
+profiles and [Run](#run) to boot it.
+
+## Profiles
 
 Ready-to-boot Alpine Linux (3.24 stable, x86_64) ISO images for QEMU development VMs.
 Each image starts its stack on boot with no installation or configuration
@@ -29,14 +73,14 @@ boot overlay (config, services) that sets everything up. All profiles share
 `monitoring-agent.sh` (monitoring network, agents); the monitoring profiles
 also share `monitoring-grafana.sh` (Grafana setup and dashboards).
 
-### Requirements
+## Requirements
 
 - Docker with the compose plugin (the image is built in the
   [`aljazmc/image-spinner`](https://hub.docker.com/r/aljazmc/image-spinner) container)
 - QEMU (`qemu-system-x86_64`, `qemu-img`); KVM is recommended
 - Internet access while building
 
-### Build
+## Build
 
 ```sh
 ./project.sh start
@@ -55,7 +99,7 @@ docker compose run --rm spinner "sh aports/scripts/mkimage.sh --tag v3.24 --outd
 
 The result is `iso/alpine-v3.24-<profile>-x86_64.iso`.
 
-### Smoke test
+## Smoke test
 
 ```sh
 tests/smoke-test.sh              # every ISO in iso/
@@ -80,7 +124,7 @@ The test uses host ports 18080–18084 and the multicast group
 the work directory) are also available. A `laravel` image tested offline
 passes with its starter page.
 
-### Lint
+## Lint
 
 ```sh
 ./project.sh lint
@@ -90,7 +134,7 @@ Runs [ShellCheck](https://www.shellcheck.net) (in the `koalaman/shellcheck`
 container) on the project's own scripts, with the settings in `.shellcheckrc`.
 CI runs the same command on every push to `main` and every pull request.
 
-### Run
+## Run
 
 Run the commands from the repository root, since the ISO path is relative.
 All examples forward guest ports to `127.0.0.1` on the host only, and SSH to
@@ -105,7 +149,7 @@ port 2222. Keep the shared directories **outside** this repository (see
   bootable and fell back to network boot. That usually means the ISO wasn't
   attached as a CD: check that the `-cdrom` path points to the built ISO.
 
-#### django
+### django
 
 ```sh
 mkdir -p ~/django-dev
@@ -133,7 +177,7 @@ qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-v3.24-django-x86
   databases, so `manage.py test` works.
 - App output: `/var/log/django-app.log` in the guest.
 
-#### drupal
+### drupal
 
 ```sh
 mkdir -p ~/drupal-dev
@@ -160,7 +204,7 @@ qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-v3.24-drupal-x86
   `sites/default` stays writable so you can edit `settings.php` from the
   host. Composer and Drush aren't included.
 
-#### grafana
+### grafana
 
 ```sh
 mkdir -p ~/grafana-dev
@@ -184,7 +228,7 @@ qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-v3.24-grafana-x8
 - The Zabbix plugin is bundled in the image. Discovered Zabbix VMs are
   queried as `Admin` / `zabbix` (see [Build-time settings](#build-time-settings)).
 
-#### joomla
+### joomla
 
 ```sh
 mkdir -p ~/joomla-dev
@@ -208,7 +252,7 @@ qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-v3.24-joomla-x86
   `configuration.php`. Without a database disk, that means a fresh site on
   every boot.
 
-#### lamp
+### lamp
 
 ```sh
 mkdir -p ~/lamp-dev
@@ -225,7 +269,7 @@ qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-v3.24-lamp-x86_6
 - Database `app`, user `app`, password `app`:
   `new mysqli('localhost', 'app', 'app', 'app')`.
 
-#### laravel
+### laravel
 
 A lighter LAMP-like stack that runs a full Laravel project: lighttpd instead
 of Apache, PHP 8.5 through PHP-FPM, MariaDB tuned for low memory, Composer,
@@ -264,7 +308,7 @@ qemu-system-x86_64 -enable-kvm -m 1024 -smp 2 -cdrom iso/alpine-v3.24-laravel-x8
   `public/hot` into the shared directory and the browser loads assets from
   the host's dev server.
 
-#### node
+### node
 
 ```sh
 mkdir -p ~/node-dev
@@ -294,7 +338,7 @@ qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-v3.24-node-x86_6
   user `app`, password `app`.
 - App output: `/var/log/node-app.log` in the guest.
 
-#### prometheus
+### prometheus
 
 ```sh
 mkdir -p ~/prometheus-dev
@@ -318,7 +362,7 @@ qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-v3.24-prometheus
   "Shared"). Prometheus is reloaded within about 10 seconds of a change.
 - Samples are kept for 15 days (`PROMETHEUS_RETENTION`).
 
-#### wordpress
+### wordpress
 
 ```sh
 mkdir -p ~/wordpress-dev
@@ -337,7 +381,7 @@ qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-v3.24-wordpress-
 - The site URL follows the host and port you open it with.
 - `WP_DEBUG` is on, with errors logged to `wp-content/debug.log`.
 
-#### x11
+### x11
 
 ```sh
 mkdir -p ~/x11-home
@@ -357,7 +401,7 @@ qemu-system-x86_64 -enable-kvm -m 2048 -smp 2 -cdrom iso/alpine-v3.24-x11-x86_64
 - `doas` gives root without a password.
 - There is no sound over VNC, and OpenGL runs on the CPU (llvmpipe).
 
-#### zabbix
+### zabbix
 
 ```sh
 mkdir -p ~/zabbix-dev
@@ -382,7 +426,7 @@ qemu-system-x86_64 -enable-kvm -m 3072 -smp 2 -cdrom iso/alpine-v3.24-zabbix-x86
   of the shared directory appear in the folder "Shared".
 - 3 GB of RAM: Zabbix, PostgreSQL, PHP and Grafana all run from RAM.
 
-### Monitoring network
+## Monitoring network
 
 Every VM can join a virtual LAN that all VMs on this host share: the
 `-nic socket,...,mcast=230.0.0.1:1234,localaddr=127.0.0.1` line in the
@@ -407,7 +451,7 @@ that line a VM works as before, it just can't be monitored by the others.
 - Use another group or port (`mcast=230.0.0.1:1235`) for a separate set of
   VMs.
 
-### How sharing and persistence work
+## How sharing and persistence work
 
 - **Permissions.** The service in the VM (Apache, PHP-FPM, the Node app,
   Django's runserver, the X session) runs with the uid/gid that owns the shared directory on the host,
@@ -424,7 +468,7 @@ that line a VM works as before, it just can't be monitored by the others.
   home to log in with `ssh -p 2222 alpine@localhost`. The other profiles have
   no password or key for root, so use the QEMU console there.
 
-### Build-time settings
+## Build-time settings
 
 Pass these as environment variables to the build container with `-e`,
 placed before the service name:
@@ -492,7 +536,7 @@ They end up in `/etc/conf.d/<profile>` in the guest.
 The defaults are weak development credentials. Don't expose these VMs beyond
 your own machine.
 
-### Clean
+## Clean
 
 ```sh
 ./project.sh clean
@@ -501,3 +545,9 @@ your own machine.
 Removes the cloned `aports` tree (keeping the profile scripts), `iso/` and
 build leftovers. It deletes the contents of every top-level directory of this
 repository except `tests/`, so don't keep a shared directory inside it.
+
+## License
+
+The recipes are licensed under the [MIT License](LICENSE). The ISOs are built
+from Alpine Linux packages and Alpine's `aports` scripts, which keep their own
+licenses.
